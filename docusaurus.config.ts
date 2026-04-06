@@ -33,7 +33,7 @@ const config: Config = {
       {
         docs: {
           path: 'content',
-          routeBasePath: 'docs',
+          routeBasePath: '/',
           sidebarPath: './sidebars.ts',
           editUrl: 'https://github.com/aether-gui/docs/tree/main/',
         },
