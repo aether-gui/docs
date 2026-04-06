@@ -99,13 +99,24 @@ Expected output:
 }
 ```
 
+### (Optional) Listen on all interfaces
+
+By default, Aether Ops only listens on `127.0.0.1` (localhost). If you're running inside a VM and want to access the web interface from your workstation's browser, configure it to listen on all interfaces:
+
+```bash
+echo 'AETHER_LISTEN=0.0.0.0:8186' | sudo tee -a /etc/aether-ops/env
+sudo systemctl restart aether-ops
+```
+
 ### Open the web interface
 
-If your server has a GUI or you're accessing it from another machine on the same network, open a browser to:
+Open a browser to:
 
 ```
 http://<server-ip>:8186
 ```
+
+Replace `<server-ip>` with your server's IP address, or use `localhost` if you're on the server itself.
 
 The Aether Ops dashboard will load. The next sections of this tutorial will cover registering nodes, running preflight checks, and deploying SD-Core and srsRAN through the web interface.
 
