@@ -162,4 +162,4 @@ When a task completes, its result is recorded in the action history automaticall
 
 For information about how completed actions affect component state, see [Deployment State](deployment-state).
 
-For the full task and action API reference, see [API Reference: OnRamp](../reference/api-onramp).
+For the full task and action API reference, see [API Reference: OnRamp](../reference/aether-ops/api-onramp).

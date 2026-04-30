@@ -42,7 +42,7 @@ curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
 ```
 
 :::warning[Security notice]
-The `--preflight` flag enables SSH password authentication, creates an `aether` OS user with the default password `aether`, and grants it passwordless sudo. **Change the password immediately after setup.** See the [Security guide](../guides/security) for hardening recommendations.
+The `--preflight` flag enables SSH password authentication, creates an `aether` OS user with the default password `aether`, and grants it passwordless sudo. **Change the password immediately after setup.** See the [Security guide](./security) for hardening recommendations.
 :::
 
 ## Verify the service is running
@@ -73,7 +73,7 @@ Example response (the `version` and `uptime` values will vary):
 
 ## Next step
 
-With the service running, proceed to [First Deployment](first-deployment) to run preflight checks and deploy Kubernetes and the 5G Core.
+With the service running, proceed to [First Deployment](quick-start) to run preflight checks and deploy Kubernetes and the 5G Core.
 
 ---
 
@@ -175,10 +175,10 @@ AETHER_API_TOKEN=my-secret-token
 EOF
 ```
 
-CLI flags override environment variables when both are set. See the [CLI Reference](../reference/cli) for the full mapping.
+CLI flags override environment variables when both are set. See the [CLI Reference](../reference/aether-ops/cli) for the full mapping.
 
 :::warning
-Exposing the API on all interfaces should be paired with TLS and API token authentication in production. See the [Security guide](../guides/security) for setup instructions.
+Exposing the API on all interfaces should be paired with TLS and API token authentication in production. See the [Security guide](./security) for setup instructions.
 :::
 
 </details>
@@ -219,6 +219,6 @@ If `needrestart` is not installed, this step can be skipped.
 <details>
 <summary>Configuration options</summary>
 
-The `aether-ops` binary accepts flags for customizing behavior, including `--tls` for automatic self-signed certificate generation and `--api-token` for bearer token authentication. See the [CLI Reference](../reference/cli) for the full list.
+The `aether-ops` binary accepts flags for customizing behavior, including `--tls` for automatic self-signed certificate generation and `--api-token` for bearer token authentication. See the [CLI Reference](../reference/aether-ops/cli) for the full list.
 
 </details>

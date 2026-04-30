@@ -40,7 +40,7 @@ Before starting, ensure your environment meets the following requirements:
 - **Networking:** Outbound internet connectivity (the installer downloads binaries and container images)
 - **Hardware:** At minimum, 4 CPU cores, 8 GB RAM, and 50 GB disk (a single-node lab deployment)
 
-After installation, the [preflight checks](first-deployment#step-1-run-preflight-checks) automatically verify that the host has the required tools (`make`, `ansible-playbook`), SSH configuration, and user accounts. Any missing prerequisites can be fixed with a single API call.
+After installation, the [preflight checks](quick-start#step-1-run-preflight-checks) automatically verify that the host has the required tools (`make`, `ansible-playbook`), SSH configuration, and user accounts. Any missing prerequisites can be fixed with a single API call.
 
 ## How the tutorial is structured
 
@@ -48,6 +48,6 @@ Each page builds on the previous one:
 
 1. **Introduction** (this page) -- overview and prerequisites
 2. [Installation](installation) -- install the service and verify it is running
-3. [First Deployment](first-deployment) -- run preflight checks, then deploy Kubernetes and the 5G Core
+3. [First Deployment](quick-start) -- run preflight checks, then deploy Kubernetes and the 5G Core
 4. [Verifying Your Deployment](verifying) -- confirm everything is working
 5. [Next Steps](next-steps) -- where to go from here
