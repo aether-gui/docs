@@ -76,6 +76,14 @@ const config: Config = {
           ],
         },
         {
+          title: 'Reference',
+          items: [
+            {label: 'aether-ops API', to: '/docs/reference/aether-ops/api-overview'},
+            {label: 'aether-ops CLI', to: '/docs/reference/aether-ops/cli'},
+            {label: 'aether-ops-bootstrap CLI', to: '/docs/reference/aether-ops-bootstrap/cli'},
+          ],
+        },
+        {
           title: 'More',
           items: [
             {label: 'GitHub', href: 'https://github.com/aether-gui/aether-ops'},
