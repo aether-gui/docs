@@ -191,4 +191,4 @@ Filters are available for narrowing results by component, action type, status, a
 
 Action history is append-only. Records are never modified or deleted, providing a complete audit trail of every deployment operation.
 
-For the full API reference, see [API Reference: OnRamp](../reference/api-onramp). For a practical walkthrough of deploying components and observing state changes, see [Deploying Components](../guides/deploying-components).
+For the full API reference, see [API Reference: OnRamp](../reference/aether-ops/api-onramp). For a practical walkthrough of deploying components and observing state changes, see [Deploying Components](../running-aether-ops/deploying-components).

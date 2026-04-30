@@ -223,4 +223,4 @@ The background metric collector is configured with server flags:
 | `--metrics-interval` | `10s` | How often metrics are sampled |
 | `--metrics-retention` | `24h` | How long samples are kept before pruning |
 
-Lower intervals increase storage usage; higher retention extends the queryable time window. See the [CLI reference](../reference/cli) for all server flags.
+Lower intervals increase storage usage; higher retention extends the queryable time window. See the [CLI reference](../reference/aether-ops/cli) for all server flags.

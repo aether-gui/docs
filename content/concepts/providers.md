@@ -37,7 +37,7 @@ What it provides:
 - **Provider listing** -- every registered provider with its enabled/running status and endpoint count.
 - **Store diagnostics** -- database engine, file size, schema version, and a live health check that measures read/write latency.
 
-For the full endpoint reference, see [API Reference: Meta](../reference/api-meta).
+For the full endpoint reference, see [API Reference: Meta](../reference/aether-ops/api-meta).
 
 ### system -- Host system info and metrics
 
@@ -54,7 +54,7 @@ What it provides:
 - **Disk metrics** -- read/write throughput and IOPS per device.
 - **Network metrics** -- bytes and packets in/out per interface.
 
-Metrics are sampled at a configurable interval and stored in the database with configurable retention. See [Monitoring](../guides/monitoring) for usage details.
+Metrics are sampled at a configurable interval and stored in the database with configurable retention. See [Monitoring](../running-aether-ops/monitoring) for usage details.
 
 ### nodes -- Cluster node inventory
 
@@ -69,7 +69,7 @@ What it provides:
 - **Role assignments** -- each node can have one or more roles (e.g., control plane, worker) that determine what components are deployed to it.
 - **Connectivity metadata** -- hostname, IP address, and SSH connection details for remote nodes.
 
-For the full endpoint reference, see [API Reference: Nodes](../reference/api-nodes).
+For the full endpoint reference, see [API Reference: Nodes](../reference/aether-ops/api-nodes).
 
 ### onramp -- Deployment lifecycle
 
@@ -89,7 +89,7 @@ What it provides:
 - **Action history** -- a persistent log of every action ever executed, with timestamps, exit codes, and metadata.
 - **Inventory** -- reads and writes the Ansible inventory file that defines target hosts.
 
-For the full endpoint reference, see [API Reference: OnRamp](../reference/api-onramp).
+For the full endpoint reference, see [API Reference: OnRamp](../reference/aether-ops/api-onramp).
 
 ### preflight -- Pre-deployment checks
 
@@ -106,7 +106,7 @@ What it provides:
 
 Each check has a severity level (`required`, `warning`, `info`) and category (`tooling`, `access`, `network`) to help the UI prioritize what to display.
 
-For the full endpoint reference, see [API Reference: Preflight](../reference/api-preflight).
+For the full endpoint reference, see [API Reference: Preflight](../reference/aether-ops/api-preflight).
 
 ## Provider health and status
 

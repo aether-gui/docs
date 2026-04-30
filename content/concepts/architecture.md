@@ -125,7 +125,7 @@ The service supports multiple layers of security that can be enabled independent
 
 These layers are applied in order during the request lifecycle. TLS is negotiated first (at the connection level), then token authentication is checked (at the HTTP level). A production deployment typically enables all three.
 
-For configuration details, see the [Security guide](../guides/security).
+For configuration details, see the [Security guide](../running-aether-ops/security).
 
 ## What the service does not do
 

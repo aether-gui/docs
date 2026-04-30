@@ -209,4 +209,4 @@ curl "http://localhost:8186/api/v1/onramp/tasks/{task-id}?offset=0"
 
 Only one task can run at a time. Attempting to start a second task while one is in progress returns `409 Conflict`.
 
-For a step-by-step deployment walkthrough, see [Deploying Components](../guides/deploying-components).
+For a step-by-step deployment walkthrough, see [Deploying Components](../../running-aether-ops/deploying-components).

@@ -280,6 +280,6 @@ This tutorial will be updated as new dashboard features become available. For th
 
 ## Next steps
 
-- [Configuration guide](/guides/configuration) — customize SD-Core and RAN parameters
-- [Components reference](/reference/components) — all available components and actions
-- [Monitoring](/guides/monitoring) — set up dashboards for network observability
+- [Configuration guide](/running-aether-ops/configuration) — customize SD-Core and RAN parameters
+- [Components reference](/reference/aether-ops/components) — all available components and actions
+- [Monitoring](/running-aether-ops/monitoring) — set up dashboards for network observability

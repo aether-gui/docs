@@ -18,12 +18,12 @@ function HomepageHeader() {
         <div className={styles.buttons}>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/getting-started/introduction">
+            to="/docs/intro">
             Get Started
           </Link>
           <Link
             className="button button--secondary button--lg"
-            to="/docs/reference/api-overview"
+            to="/docs/reference/aether-ops/api-overview"
             style={{marginLeft: '1rem'}}>
             API Reference
           </Link>
@@ -40,19 +40,19 @@ type FeatureItem = {
 
 const features: FeatureItem[] = [
   {
-    title: 'One-Command Deployment',
+    title: 'Build, Bootstrap, Operate',
     description:
-      'Deploy Kubernetes and a 5G core network with a single API call. Aether WebUI wraps the Aether OnRamp toolchain so you can manage complex deployments through a clean REST API.',
+      'Aether ships a small, focused set of tools — aether-ops, aether-ops-bootstrap, build-bundle, patch-bundle — that together cover producing offline release artifacts, installing them onto airgapped hosts, and running a 5G platform on top.',
   },
   {
-    title: 'Full Lifecycle Management',
+    title: 'Standard Telco Stack',
     description:
-      'Install, configure, monitor, and teardown components independently. Track deployment state, view action history, and stream task output in real time.',
+      'SD-Core for the 5G Core, srsRAN / UERANSIM / OAI / gNBSim for RAN, RKE2 for Kubernetes, all driven by Aether OnRamp under aether-ops. Production-shaped components, deployable on a laptop or a fleet.',
   },
   {
     title: 'Secure by Default',
     description:
-      'TLS with auto-generated certificates, mutual TLS for machine-to-machine auth, bearer token protection, and AES-256-GCM encryption for stored credentials.',
+      'TLS with auto-generated certificates, mutual TLS for machine-to-machine auth, bearer token protection, and AES-256-GCM encryption for stored credentials. Bootstrap is fully airgapped — no network requests at install time.',
   },
 ];
 

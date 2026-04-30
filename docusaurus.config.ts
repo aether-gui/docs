@@ -3,8 +3,8 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Aether Ops',
-  tagline: 'Deploy and manage Aether 5G networks',
+  title: 'Aether',
+  tagline: 'Build, bootstrap, and operate the Aether 5G platform',
   favicon: 'img/favicon.ico',
 
   url: 'https://aether-gui.github.io',
@@ -47,7 +47,7 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Aether Ops',
+      title: 'Aether',
       items: [
         {
           type: 'docSidebar',
@@ -68,9 +68,19 @@ const config: Config = {
         {
           title: 'Docs',
           items: [
-            {label: 'Getting Started', to: '/docs/getting-started/introduction'},
-            {label: 'API Reference', to: '/docs/reference/api-overview'},
-            {label: 'Guides', to: '/docs/guides/node-management'},
+            {label: 'Introduction', to: '/docs/intro'},
+            {label: 'Tools', to: '/docs/tools/'},
+            {label: 'Run aether-ops', to: '/docs/running-aether-ops/quick-start'},
+            {label: 'Bootstrap a system', to: '/docs/bootstrapping/quick-start'},
+            {label: 'Build a bundle', to: '/docs/building-a-bundle/quick-start'},
+          ],
+        },
+        {
+          title: 'Reference',
+          items: [
+            {label: 'aether-ops API', to: '/docs/reference/aether-ops/api-overview'},
+            {label: 'aether-ops CLI', to: '/docs/reference/aether-ops/cli'},
+            {label: 'aether-ops-bootstrap CLI', to: '/docs/reference/aether-ops-bootstrap/cli'},
           ],
         },
         {
@@ -81,7 +91,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Aether Ops`,
+      copyright: `Copyright © ${new Date().getFullYear()} Aether`,
     },
     prism: {
       theme: prismThemes.github,

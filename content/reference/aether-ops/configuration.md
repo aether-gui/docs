@@ -274,4 +274,4 @@ A typical configuration workflow:
 3. **Patch specific sections** as needed: `PATCH /api/v1/onramp/config`
 4. **Deploy components** using the active config: `POST /api/v1/onramp/components/k8s/install`
 
-For a step-by-step guide, see [Deploying Components](../guides/deploying-components).
+For a step-by-step guide, see [Deploying Components](../../running-aether-ops/deploying-components).
