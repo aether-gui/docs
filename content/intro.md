@@ -3,15 +3,15 @@ sidebar_position: 1
 title: Introduction
 ---
 
-# Aether documentation
+# Aether Ops documentation
 
-Aether is an open platform for deploying and operating private 4G and 5G networks. It packages a deployable 5G Core (SD-Core), a Radio Access Network (RAN) toolchain (srsRAN, UERANSIM, OpenAirInterface, gNBSim), and the Kubernetes (RKE2) and Helm tooling that hosts them — all driven through a single management service with a REST API and a web UI.
+Aether Ops is the tooling suite for deploying and operating [Aether](https://aetherproject.org) — an open platform for private 4G and 5G networks. It packages a deployable 5G Core (SD-Core), a Radio Access Network (RAN) toolchain (srsRAN, UERANSIM, OpenAirInterface, gNBSim), and the Kubernetes (RKE2) and Helm tooling that hosts them, all driven through a single management service with a REST API and a web UI.
 
-These docs cover everything you need to **build**, **bootstrap**, and **operate** an Aether deployment.
+These docs cover everything you need to **build**, **bootstrap**, and **operate** an Aether deployment using the Aether Ops toolchain.
 
 ## The tools
 
-Aether ships as a small set of focused tools. Each one has a [Tools section](./tools/) page describing what it does and how it fits in.
+Aether Ops ships as a small set of focused tools. Each one has a [Tools section](./tools/) page describing what it does and how it fits in.
 
 - **[aether-ops](./tools/aether-ops)** — the long-running management service. Exposes a REST API and a web UI, drives the [Aether OnRamp](https://github.com/opennetworkinglab/aether-onramp) Ansible toolchain to deploy and manage 5G Core, RAN, and supporting components.
 - **[aether-ops-bootstrap](./tools/aether-ops-bootstrap)** — a single-shot installer that turns a fresh Ubuntu host into a running aether-ops management plane on top of RKE2, fully offline.

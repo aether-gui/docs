@@ -42,7 +42,7 @@ const features: FeatureItem[] = [
   {
     title: 'Build, Bootstrap, Operate',
     description:
-      'Aether ships a small, focused set of tools — aether-ops, aether-ops-bootstrap, build-bundle, patch-bundle — that together cover producing offline release artifacts, installing them onto airgapped hosts, and running a 5G platform on top.',
+      'Aether Ops ships a small, focused set of tools — aether-ops, aether-ops-bootstrap, build-bundle, patch-bundle — that together cover producing offline release artifacts, installing them onto airgapped hosts, and running an Aether deployment on top.',
   },
   {
     title: 'Standard Telco Stack',

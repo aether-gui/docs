@@ -3,8 +3,8 @@ import type {Config} from '@docusaurus/types';
 import type * as Preset from '@docusaurus/preset-classic';
 
 const config: Config = {
-  title: 'Aether',
-  tagline: 'Build, bootstrap, and operate the Aether 5G platform',
+  title: 'Aether Ops',
+  tagline: 'Build, bootstrap, and operate Aether 5G deployments',
   favicon: 'img/favicon.ico',
 
   url: 'https://aether-gui.github.io',
@@ -47,7 +47,7 @@ const config: Config = {
 
   themeConfig: {
     navbar: {
-      title: 'Aether',
+      title: 'Aether Ops',
       items: [
         {
           type: 'docSidebar',
@@ -91,7 +91,7 @@ const config: Config = {
           ],
         },
       ],
-      copyright: `Copyright © ${new Date().getFullYear()} Aether`,
+      copyright: `Copyright © ${new Date().getFullYear()} Aether Ops`,
     },
     prism: {
       theme: prismThemes.github,

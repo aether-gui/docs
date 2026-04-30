@@ -5,7 +5,7 @@ title: Tools
 
 # Tools
 
-The Aether ecosystem is a small, focused set of tools. Each one does one thing; together they cover building, deploying, and operating a 5G platform.
+Aether Ops is a small, focused set of tools. Each one does one thing; together they cover building, deploying, and operating Aether on private infrastructure.
 
 | Tool | What it does | Audience |
 |---|---|---|
