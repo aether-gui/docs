@@ -1,24 +1,69 @@
 ---
 title: "Status pages"
-description: "Health of the 5G network, Kubernetes, and infrastructure."
+description: "Health of the 5G network, Kubernetes, and infrastructure, as computed by the daemon."
+products: [aether-ops-web]
 ---
+
+import { Image } from 'astro:assets';
+import network from '../../../assets/screenshots/gui/status-pages-01-5g-network.png';
+import kubernetes from '../../../assets/screenshots/gui/status-pages-02-kubernetes.png';
+import infra from '../../../assets/screenshots/gui/status-pages-03-infrastructure.png';
+import node from '../../../assets/screenshots/gui/status-pages-04-node-detail.png';
 
 ## What you'll do
 
-TODO
+Read the three status pages under *Status* in the sidebar and learn what each number means. Five
+minutes, no changes to the system.
 
 ## Prerequisites
 
-- TODO
+- A deployment that finished the [setup wizard](/docs/gui/setup-wizard/).
 
-## Steps
+## 5G Network
 
-TODO
+<Image src={network} alt="5G Network status page" />
+
+A rollup of the running core. The headline is *healthy* when every network function is up and
+*degraded* when the core runs but nothing is attached to it; a fresh deployment with no radio sits
+at *degraded* until a gNB connects, and that is normal.
+
+| Tile | Meaning |
+|---|---|
+| NFs up | Network functions reporting healthy over the number the core exposes. The note under the table explains that stock SD-Core often reports fewer than are actually running. |
+| gNBs connected | NGAP associations the AMF currently holds. One gNB can hold more than one. |
+| UEs registered | Devices the AMF knows about right now. |
+| Active PDU sessions | Data sessions currently established. |
+| UPF data plane | Bytes through the user plane, aggregate across all sessions. |
+
+Before the core is deployed the page shows *5G network telemetry unreachable* and a link to the
+Deployment tab.
+
+## Kubernetes
+
+<Image src={kubernetes} alt="Kubernetes status page" />
+
+Nodes ready, pods running, and resource usage of the RKE2 cluster the `master` role installed. The
+daemon reads this through the cluster's own API, so an unreachable cluster shows *Cluster telemetry
+unreachable* rather than stale numbers.
+
+## Infrastructure
+
+<Image src={infra} alt="Infrastructure status page" />
+
+One row per node, reported by the agent the daemon installed on it: agent state, memory use, and
+the fullest disk partition. *Nodes reporting 2 / 2* means every registered node has a working
+agent. A node whose agent has stopped answering drops out of the count and its row changes.
+
+Click a row for the node's detail page:
+
+<Image src={node} alt="Per-node infrastructure detail" />
 
 ## Verify
 
-TODO
+On a healthy single-machine deployment with gNBSim running, the three pages read *healthy*,
+*healthy*, and *healthy*. Without a radio attached, 5G Network reads *degraded* with *gNBs connected
+0*.
 
 ## Next
 
-TODO
+[Backup and restore](/docs/gui/backup-restore/) protects what you have built.

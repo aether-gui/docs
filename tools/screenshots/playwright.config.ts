@@ -27,5 +27,16 @@ export default defineConfig({
     contextOptions: { reducedMotion: 'reduce' },
     trace: 'retain-on-failure',
   },
-  projects: [{ name: 'chromium', use: { ...devices['Desktop Chrome'] } }],
+  // The device preset sets its own 1280x720 viewport at scale 1, so the docs
+  // viewport and scale factor are restated after it.
+  projects: [
+    {
+      name: 'chromium',
+      use: {
+        ...devices['Desktop Chrome'],
+        viewport: { width: 1440, height: 900 },
+        deviceScaleFactor: 2,
+      },
+    },
+  ],
 });

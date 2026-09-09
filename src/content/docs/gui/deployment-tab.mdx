@@ -1,24 +1,83 @@
 ---
 title: "Deployment tab"
 description: "Manage components per node after the wizard: add roles, redeploy, uninstall."
+products: [aether-ops-web]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import nodes from '../../../assets/screenshots/gui/deployment-tab-01-nodes.png';
+import editRoles from '../../../assets/screenshots/gui/deployment-tab-02-edit-roles.png';
+import bulk from '../../../assets/screenshots/gui/deployment-tab-03-bulk-deploy.png';
 
 ## What you'll do
 
-TODO
+Use the Deployment tab to see what is installed where, change a node's roles, and reinstall or
+remove a component, without going back through the wizard. Five minutes to read; a component
+install takes two to four minutes.
 
 ## Prerequisites
 
-- TODO
+- A deployment that finished the [setup wizard](/docs/gui/setup-wizard/).
+
+## The page
+
+<Image src={nodes} alt="Deployment tab with two nodes" />
+
+One card per node. The header shows its address, the address other nodes use to reach it, CPU
+cores, memory, and disk, then its roles. Below that, one row per component those roles bring:
+*Kubernetes (RKE2) cluster lifecycle* and *5G core network (SD-Core)* for `master`, *gNBSim
+simulated RAN* for `gnbsim`. Each row carries a state: *not installed*, *installing*, *installed*,
+or a failure.
+
+While the wizard's deployment runs, the rows change to *installing* one after another and the blue
+banner at the top tracks progress.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Open a node's role editor.** Click **Edit roles** on a node card. The dialog *Edit roles —
+   \<node\>* lists the node's assigned roles first, each with its components and their lifecycle
+   actions inline, then every other role with an **Add** button.
+
+   <Image src={editRoles} alt="Edit roles dialog for the master node" />
+
+   On the master node that means `master` under *ASSIGNED* with *Kubernetes (RKE2) cluster
+   lifecycle* and *5G core network (SD-Core)*, each *installed* with an **Uninstall** button, and a
+   *DAY-2* row offering **Reset** for the core.
+
+2. **Add a role.** Click **Add** next to a role. The role is assigned at once, and its component
+   appears under *ASSIGNED* as *not installed* with **Install** and **Remove** buttons. **Remove**
+   takes the role away again without installing anything. Only one node can hold `master`; on
+   every other node its **Add** button is disabled with the hint *Held by \<node\> — only one node
+   can have this role*.
+
+3. **Install or uninstall a component.** **Install** runs the component's install action on that
+   node and streams the output in a task panel; the blue banner tracks it from any page.
+   **Uninstall** asks for confirmation first. The component rows on the node cards themselves are
+   read-only; the actions live in the role editor. Installed components with day-2 actions show
+   them inline too: **Reset** for the core, **Run** for gNBSim.
+
+4. **Deploy several things at once.** **Bulk Deploy** in the top right takes a deployment manifest
+   file (`.yaml`, `.yml`, or `.json`) describing nodes and roles, parses it, and applies it in one
+   apply run. This is how a larger site is stood up without clicking through each node.
+
+   <Image src={bulk} alt="Bulk Deployment dialog asking for a manifest file" />
+
+</Steps>
+
+<Aside type="note" title="Order matters">
+Components install in tiers: Kubernetes first, then the core, then RAN and simulators. When you
+install several at once the daemon orders them for you, and the Deploy step of the wizard shows
+that order before anything starts.
+</Aside>
 
 ## Verify
 
-TODO
+After an install finishes, the component row reads *installed* and **Overview** lists it as
+*running* with *1 / 1* instances.
 
 ## Next
 
-TODO
+[5G network](/docs/gui/5g-network/) puts the deployed core to use.

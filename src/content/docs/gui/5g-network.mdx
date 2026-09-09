@@ -1,24 +1,147 @@
 ---
 title: "5G network"
-description: "Subscribers, device groups, network slices, and the live core view."
+description: "Subscribers, device groups, network slices, and the live core view, plus running the built-in simulator."
+products: [aether-ops-web]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import components from '../../../assets/screenshots/gui/5g-network-01-core-components.png';
+import actions from '../../../assets/screenshots/gui/5g-network-02-operational-actions.png';
+import confirm from '../../../assets/screenshots/gui/5g-network-03-run-confirm.png';
+import taskOutput from '../../../assets/screenshots/gui/5g-network-04-task-output.png';
+import liveUes from '../../../assets/screenshots/gui/5g-network-05-live-ues.png';
+import ueDetails from '../../../assets/screenshots/gui/5g-network-06-ue-details.png';
+import gnbs from '../../../assets/screenshots/gui/5g-network-07-gnbs.png';
+import nfHealth from '../../../assets/screenshots/gui/5g-network-08-nf-health.png';
+import upf from '../../../assets/screenshots/gui/5g-network-09-upf-counters.png';
+import subscribers from '../../../assets/screenshots/gui/5g-network-10-subscribers.png';
+import addSubscriber from '../../../assets/screenshots/gui/5g-network-11-add-subscriber.png';
+import subscriberDetails from '../../../assets/screenshots/gui/5g-network-12-subscriber-details.png';
+import deviceGroups from '../../../assets/screenshots/gui/5g-network-13-device-groups.png';
+import slices from '../../../assets/screenshots/gui/5g-network-14-network-slices.png';
 
 ## What you'll do
 
-TODO
+Start the built-in gNB and UE simulator so the core has something to talk to, then watch devices
+register on the *Core* page and look at who is allowed on the network on the *UEs & Subscribers*
+page. About ten minutes.
 
 ## Prerequisites
 
-- TODO
+- A deployment with the `master` role installed and a `gnbsim` node, as set up in the
+  [setup wizard](/docs/gui/setup-wizard/). Without a simulator or a real gNB the live pages stay
+  empty, which is correct behaviour.
+
+## The Core page
+
+**5G Network › Core** has six tabs.
+
+<Image src={components} alt="Core page, Components tab" />
+
+| Tab | What it shows |
+|---|---|
+| **Components** | The core as a whole: *16 pod(s) running in aether-5gc* on a healthy deployment. |
+| **Live UEs** | Devices currently registered with the AMF, their state, and their PDU sessions. |
+| **gNBs** | NGAP associations the AMF holds, one row each. |
+| **NF Health** | Each network function (amf, ausf, nrf, nssf, pcf, smf, udm, udr, upf) and whether it is up. |
+| **UPF Counters** | Bytes, packets, drops, and latency through the user plane, split into the RAN side (N3) and the data-network side (N6). Aggregate across all UEs. |
+| **Operational Actions** | Day-2 actions per component: reset the core, start and stop simulators, and more. |
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Open the actions.** Go to **5G Network › Core** and pick the **Operational Actions** tab. Every
+   action a component offers is listed with its availability; actions of components that are not
+   installed are greyed out.
+
+   <Image src={actions} alt="Operational Actions tab" />
+
+2. **Run the simulator.** On the `gnbsim` / `run` row click **Run**, read the confirmation, and click
+   **Run action**.
+
+   <Image src={confirm} alt="Confirmation dialog for running gNBSim" />
+
+   The task's output streams into the panel below the table. The run takes about ten seconds; it
+   starts the simulator containers on the `gnbsim` node and returns.
+
+   <Image src={taskOutput} alt="Streaming task output of the gNBSim run" />
+
+   <Aside type="note">
+   Only one OnRamp task runs at a time. While one is in flight every *Run* button is disabled.
+   </Aside>
+
+3. **Watch devices register.** Switch to the **Live UEs** tab. A few seconds after the run finishes,
+   the simulated UEs appear with their SUPI, a GUTI assigned by the AMF, the tracking area, and one
+   PDU session each.
+
+   <Image src={liveUes} alt="Live UEs tab with three registered UEs" />
+
+   **Details** on a row shows what the AMF and SMF know about that device.
+
+   <Image src={ueDetails} alt="UE details dialog" />
+
+4. **Check the gNB.** The **gNBs** tab lists the simulator's associations to the AMF, with the
+   endpoint it connected from and its state.
+
+   <Image src={gnbs} alt="gNBs tab" />
+
+5. **Look at the core's health and traffic.** **NF Health** shows every function up; **UPF
+   Counters** shows bytes moving on N3 and N6 while the UEs are attached.
+
+   <Image src={nfHealth} alt="NF Health tab" />
+   <Image src={upf} alt="UPF Counters tab" />
+
+</Steps>
+
+<Aside type="caution" title="If no UEs appear">
+The simulator's task can report success while the simulator itself failed to start, because the
+task only launches its containers. Check the container logs on the gNBSim node:
+
+```bash
+docker logs gnbsim-1 2>&1 | tail
+```
+
+With the OnRamp version deployed by aether-ops 0.5.2 and gnbsim 2.3.0 the containers exit with
+*dnn is required for profile type 'custom'*. See [Troubleshooting](/docs/gui/troubleshooting/) for
+the workaround.
+</Aside>
+
+## Subscribers, device groups, and slices
+
+**5G Network › UEs & Subscribers** is where you decide who may use the network.
+
+<Image src={subscribers} alt="Subscribers tab" />
+
+- **Subscribers** are SIM identities: an IMSI with its key and OPc. A fresh deployment already has
+  one hundred, seeded by OnRamp for the simulator (IMSIs `208930100007500` to `…7599`). **Add
+  Subscriber** opens a form for a new one; **Details** shows a subscriber's keys, group, and slice;
+  **Delete** removes it.
+
+  <Image src={addSubscriber} alt="Add Subscriber form" />
+  <Image src={subscriberDetails} alt="Subscriber details dialog" />
+
+- **Device Groups** collect subscribers that share a data network name (DNN), an IP pool, DNS, MTU,
+  and rate limits. The seeded group is `user-group1` with all one hundred IMSIs on DNN `internet`.
+
+  <Image src={deviceGroups} alt="Device Groups tab" />
+
+- **Network Slices** bind device groups to a slice (`sst`/`sd`), a site with its PLMN, the gNBs and
+  UPF that serve it, and filtering rules. The seeded slice is `default` (sst 1, sd 010203, PLMN
+  208/93).
+
+  <Image src={slices} alt="Network Slices tab" />
+
+Each card has **Edit JSON** for changes beyond what the form offers. Changes go straight to the
+running core.
 
 ## Verify
 
-TODO
+With the simulator running, **Status › 5G Network** reports *healthy*, *gNBs connected 2*, and
+*UEs registered 3*.
 
 ## Next
 
-TODO
+[Status pages](/docs/gui/status-pages/) explains the health rollups in detail;
+[Backup and restore](/docs/gui/backup-restore/) protects the subscriber database.

@@ -1,6 +1,67 @@
 ---
 title: "A quick tour"
 description: "Where things are in the Aether Ops web UI."
+products: [aether-ops-web]
 ---
 
-TODO
+import { Image } from 'astro:assets';
+import overview from '../../../assets/screenshots/gui/tour-01-overview.png';
+import sidebar from '../../../assets/screenshots/gui/tour-02-sidebar.png';
+import topology from '../../../assets/screenshots/gui/tour-04-topology.png';
+
+The web UI has two faces. The first time you open it you get the **setup wizard**, five steps that
+take a fresh install to a running network. Every visit after that opens the **dashboard**. The
+[setup wizard](/docs/gui/setup-wizard/) has its own page; this one is about the dashboard.
+
+<Image src={overview} alt="The dashboard overview page after a deployment" />
+
+## The header
+
+The top bar names the product and, on the right, the current deployment. Version 0.5.2 creates one
+deployment called *Default Deployment* and every page shows that one. While something is being
+installed, a blue banner appears under the header: *Deploying: Kubernetes (RKE2) cluster lifecycle
+(0/3 complete)* and so on. It follows you from page to page until the work finishes.
+
+The small dark badge in the bottom right corner is the build of the web UI, useful when reporting a
+problem.
+
+## The sidebar
+
+<Image src={sidebar} alt="The dashboard sidebar" width="260" />
+
+| Entry | What it shows |
+|---|---|
+| **Overview** | Health of the 5G network, Kubernetes, and infrastructure at a glance; the components table; recent network events; the nodes and their roles. |
+| **Deployment** | One card per node with its roles and the state of each component on it. Add or remove roles, install or uninstall components, and run bulk deployments here. See [Deployment tab](/docs/gui/deployment-tab/). |
+| **Topology** | An experimental diagram of nodes and the networks they sit on. Marked *EXP*. |
+| **5G Network › Core** | The running core: components, live UEs, gNBs, network function health, UPF counters, and day-2 operational actions. See [5G network](/docs/gui/5g-network/). |
+| **5G Network › RAN** | Marked *SOON*: not available in this version. |
+| **5G Network › UEs & Subscribers** | Subscribers, device groups, and network slices. |
+| **Operations › Backup & Restore** | Config and subscriber backups, database snapshots, imports, and drift checks. See [Backup and restore](/docs/gui/backup-restore/). |
+| **Status › 5G Network / Kubernetes / Infrastructure** | Health rollups computed by the daemon. See [Status pages](/docs/gui/status-pages/). |
+| **Status › Security** | Marked *SOON*: not available in this version. |
+
+## Polling and freshness
+
+Most panels refresh themselves and say so, for example *Updated 11:55 AM · 15s poll*. The circular
+arrow next to that text refreshes on demand. Nothing on the dashboard changes the system by itself;
+buttons that do are labelled as actions and ask for confirmation.
+
+## Topology
+
+<Image src={topology} alt="The experimental topology page" />
+
+The topology page draws each node with the networks its interfaces are on. Clicking a node opens the
+same role editor as the Deployment tab. It is marked experimental and the layout may change.
+
+## Getting back to the wizard
+
+The wizard runs once. To run it again on the same daemon, reset its state through the API and
+reload the page:
+
+```bash
+curl -X DELETE http://<host>:8186/api/v1/wizard
+```
+
+This forgets which steps were completed. It does not remove nodes, roles, or anything that was
+deployed.

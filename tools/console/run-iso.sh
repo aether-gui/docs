@@ -19,8 +19,15 @@ CPUS=${CPUS:-4}
 DISK="$WORK/disk.qcow2"
 mkdir -p "$WORK"
 [ -f "$DISK" ] || qemu-img create -f qcow2 "$DISK" 100G >/dev/null
+# UEFI firmware: the installed disk layout (GPT, ESP + btrfs root, no BIOS boot
+# partition) cannot complete a legacy-BIOS install, so the VM must boot UEFI.
+OVMF_CODE=${OVMF_CODE:-/usr/share/OVMF/OVMF_CODE_4M.fd}
+OVMF_VARS_SRC=${OVMF_VARS_SRC:-/usr/share/OVMF/OVMF_VARS_4M.fd}
+[ -f "$WORK/OVMF_VARS.fd" ] || cp "$OVMF_VARS_SRC" "$WORK/OVMF_VARS.fd"
 args=(
-  -enable-kvm -m "$MEM" -smp "$CPUS" -cpu host
+  -enable-kvm -m "$MEM" -smp "$CPUS" -cpu host -machine q35
+  -drive "if=pflash,format=raw,readonly=on,file=$OVMF_CODE"
+  -drive "if=pflash,format=raw,file=$WORK/OVMF_VARS.fd"
   -drive "file=$DISK,if=virtio,format=qcow2"
   -nic user,model=virtio-net-pci
   -display none -vnc 127.0.0.1:9

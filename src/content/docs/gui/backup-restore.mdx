@@ -1,24 +1,68 @@
 ---
 title: "Backup and restore"
-description: "Back up and restore subscriber and core configuration."
+description: "Back up and restore subscriber and core configuration from the Operations page."
+products: [aether-ops-web]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import page from '../../../assets/screenshots/gui/backup-restore-01-page.png';
+import drift from '../../../assets/screenshots/gui/backup-restore-02-drift.png';
 
 ## What you'll do
 
-TODO
+Download a configuration backup of the core, check the live core against its deploy-time
+configuration, and know which restore to use when. Five minutes.
 
 ## Prerequisites
 
-- TODO
+- A running 5G core. Until then the page shows *5G core not reachable*.
+
+## The page
+
+<Image src={page} alt="The Backup & Restore page" />
+
+Everything here acts on the SD-Core of the current deployment, through the core's own web console
+API, so it is available whether the core was deployed from the wizard or the Deployment tab.
+
+| Section | What it does |
+|---|---|
+| **Config Backup & Export** | *Download config backup* saves one JSON bundle with every subscriber credential plus all device-group and network-slice definitions. *Export subscribers CSV* saves only the subscribers. |
+| **Config Restore** | *Restore from file…* replays a config bundle in dependency order: device groups, then slices, then subscribers. Items are upserted, and any per-item failure is reported rather than aborting the restore. |
+| **Database Snapshot (mongodump)** | *Download database snapshot* takes a full binary dump of the core databases. *Restore snapshot…* replays it with `mongorestore --drop`, replacing the current contents. Needs SSH access to a control-plane node. |
+| **Import Subscribers** | Paste a JSON array or CSV rows of `imsi,key,opc,sequence_number` and import them. Invalid records are reported and skipped. |
+| **Config Drift** | *Check drift* compares the live core configuration with the SD-Core values file used at deploy time and lists per-resource differences. Read-only. |
 
 ## Steps
 
-TODO
+<Steps>
+
+1. Open **Operations › Backup & Restore**.
+
+2. Click **Download config backup** and keep the file somewhere safe. This is the backup to take
+   before experimenting with subscribers, device groups, or slices.
+
+3. Click **Check drift** to see whether anything in the core differs from what was deployed.
+
+   <Image src={drift} alt="Result of a drift check" />
+
+   A fresh deployment reports no drift. After you add subscribers in the UI, the subscriber
+   section shows the additions, which is expected.
+
+</Steps>
+
+<Aside type="caution" title="Two kinds of restore">
+A **config restore** merges definitions into the running core and is safe to repeat. A **database
+snapshot restore** wipes the core databases and replaces them; every UE loses its registration and
+the change cannot be undone except with another snapshot.
+</Aside>
 
 ## Verify
 
-TODO
+Open the downloaded config backup: it is JSON with `subscribers`, `device_groups`, and
+`network_slices` arrays, and the subscriber count matches the *Subscribers* tile on
+**5G Network › UEs & Subscribers**.
 
 ## Next
 
-TODO
+[Troubleshooting](/docs/gui/troubleshooting/) collects the problems seen while writing this guide.
