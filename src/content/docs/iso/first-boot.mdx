@@ -46,7 +46,7 @@ Two things start on the first boot:
    for a while and can scribble over the dialog; it still responds, and the next screen redraws
    cleanly.
 
-   <Image src={welcome} alt="The Aether Node Setup welcome dialog, partly overdrawn by boot messages" />
+   <Image src={welcome} alt="The Aether Node Setup welcome dialog" />
 
    - *Welcome* lists what will be configured. Choose **Yes**.
    - *Hostname* offers the generated name; type a better one if you like.
@@ -86,9 +86,9 @@ Two things start on the first boot:
    Until a rebuilt image fixes the hash, set a working password from a recovery shell: reboot, hold
    Shift or press Esc at the firmware splash to get the GRUB menu, edit the Ubuntu entry, append
    `init=/bin/bash` to the `linux` line, boot, then run `mount -o remount,rw /` and `passwd aether`
-   with the password `aether` (that is the value the service was told to use), and reboot. Set a
-   different password afterwards with `sudo aether-ops`-independent means only after reading
-   [How the ISO works](/docs/iso/how-the-iso-works/).
+   with the password `aether` (the value the management service was told to use), then
+   `sync` and `reboot -f`. Keep that password until you have read the note on the OnRamp password
+   in [How the ISO works](/docs/iso/how-the-iso-works/), because the service uses it too.
    </Aside>
 
 </Steps>
@@ -98,19 +98,28 @@ Two things start on the first boot:
 Once you have a shell on the node:
 
 ```bash
-systemctl is-active rke2-server aether-ops
+systemctl is-active aether-bootstrap rke2-server aether-ops
 ls /var/lib/aether/
+cat /etc/aether/network.conf
 curl http://localhost:8186/healthz
 ```
 
 ```text title="Expected output"
+inactive
 active
 active
 bootstrap.done
+TOPOLOGY=collapsed
+MGMT_IFACE=enp0s2
+N2_IFACE=enp0s2
+N3_IFACE=enp0s2
+N6_IFACE=enp0s2
 {"status":"healthy","version":"v0.4.5","uptime":"3m12s"}
 ```
 
-`bootstrap.done` replaces the bundle when the bootstrap succeeds. `aether-ops` reports the version
+`aether-bootstrap` reads *inactive* once it has run; `rke2-server` shows *activating* for a minute
+or so after any reboot. `bootstrap.done` replaces the bundle when the bootstrap succeeds, and
+`network.conf` records what the setup screen chose. `aether-ops` reports the version
 embedded in the ISO's bundle, which may be older than the current release; see the note on the
 [install page](/docs/iso/install/).
 

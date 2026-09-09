@@ -84,7 +84,12 @@ test.describe.serial('setup wizard', () => {
     await page.goto('/setup');
     await expect(page.getByText('Preflight Checks')).toBeVisible();
     await page.waitForTimeout(2000);
-    await settle(page, /Checking\.\.\.|Running\.\.\.|SSH Pending/);
+    // A reload forgets the SSH verification result; it has to be re-run.
+    if (await page.getByText('SSH Pending').count()) {
+      await page.getByRole('button', { name: 'Re-check All' }).click();
+      await page.waitForTimeout(3000);
+    }
+    await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled({ timeout: 5 * 60_000 });
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByText('Assign Roles')).toBeVisible();
     await shot(page, 'gui', 'setup-wizard-06-roles', { fullPage: true });

@@ -9,7 +9,6 @@ import { Image } from 'astro:assets';
 import nodes from '../../../assets/screenshots/gui/setup-wizard-01-nodes.png';
 import preflight from '../../../assets/screenshots/gui/setup-wizard-02-preflight.png';
 import fixConfirm from '../../../assets/screenshots/gui/setup-wizard-03-preflight-fix-confirm.png';
-import fixResult from '../../../assets/screenshots/gui/setup-wizard-04-preflight-fix-result.png';
 import preflightPassed from '../../../assets/screenshots/gui/setup-wizard-05-preflight-passed.png';
 import roles from '../../../assets/screenshots/gui/setup-wizard-06-roles.png';
 import rolesAssigned from '../../../assets/screenshots/gui/setup-wizard-07-roles-assigned.png';
@@ -49,18 +48,24 @@ top; completed steps get a tick and stay clickable until the deployment starts.
 2. **Preflight.** Each node is checked for the packages, SSH access, and `aether` user a deployment
    needs, then SSH connectivity is verified with an Ansible ping. Expand a node to see its checks.
 
-   <Image src={preflight} alt="Wizard step 2, Preflight Checks, with one fixable issue on the second node" />
+   <Image src={preflight} alt="Wizard step 2, Preflight Checks, while the checks run" />
 
    A failed check with a fix shows **Auto-fix**; a node with several shows **Fix All (n)**. Fix All
    lists what it will change and asks you to confirm.
 
    <Image src={fixConfirm} alt="Fix All confirmation listing the fixes to apply" />
 
-   The result dialog reports what was fixed, what failed, and what was skipped. Close it, then click
-   **Re-check All**: fixes do not re-run the SSH verification by themselves, and **Continue** stays
-   disabled until every included node shows *SSH OK*.
+   The result dialog reports what was fixed, what failed, and what was skipped, for example
+   *3 fixed, 0 failed, 1 skipped* with one line per check. Close it, then click **Re-check All**:
+   fixes do not re-run the SSH verification by themselves, and **Continue** stays disabled until
+   every included node shows *SSH OK*.
 
-   <Image src={fixResult} alt="Fix All result: 3 fixed, 0 failed, 1 skipped" />
+   Reloading the browser on this step forgets the verification result: both nodes go back to
+   *SSH Pending* and **Re-check All** has to run again before **Continue** enables.
+
+   A node added through the **Add Node** dialog usually arrives with its checks already fixed,
+   because that dialog runs the same fixes as its last stage; then this step only verifies.
+
    <Image src={preflightPassed} alt="Preflight with both nodes at SSH OK" />
 
 3. **Roles.** Every node shows the same grid of role cards. Click a card to assign that role.
