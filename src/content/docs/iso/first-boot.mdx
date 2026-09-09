@@ -5,6 +5,13 @@ products: [aether-ops-iso]
 ---
 
 import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import welcome from '../../../assets/screenshots/iso/first-boot-01-welcome.png';
+import hostname from '../../../assets/screenshots/iso/first-boot-02-hostname.png';
+import topology from '../../../assets/screenshots/iso/first-boot-03-topology.png';
+import ipMethod from '../../../assets/screenshots/iso/first-boot-05-ip-method.png';
+import summary from '../../../assets/screenshots/iso/first-boot-06-summary.png';
+import console from '../../../assets/screenshots/iso/first-boot-07-console-after-bootstrap.png';
 
 ## What you'll do
 
@@ -22,7 +29,8 @@ Two things start on the first boot:
 
 - **The platform bootstrap.** A service unpacks the bundle staged by the installer and installs
   Kubernetes (RKE2), Helm, the Aether container images, OnRamp, and `aether-ops`. It runs
-  unattended and takes about ten minutes. Nothing shows on screen while it runs.
+  unattended and took just under ten minutes on the lab machine. Its progress shows only as
+  ordinary service messages on the console.
 - **The setup screen.** About a minute after boot, a text dialog titled *Aether Node Setup* appears
   on the console and asks for a hostname and network settings. You can answer it while the
   bootstrap is still running.
@@ -34,58 +42,77 @@ Two things start on the first boot:
 1. **Power the machine on.** It boots from its disk into Ubuntu. The hostname is derived from the
    first network card's MAC address, for example `aether-80fd87`, until you change it.
 
-2. **Answer the setup screen.** Use the arrow keys, Tab, and Enter.
+2. **Answer the setup screen.** Use the arrow keys, Tab, and Enter. Boot messages keep printing
+   for a while and can scribble over the dialog; it still responds, and the next screen redraws
+   cleanly.
 
-   - *Welcome* asks whether to continue. Choose **Yes**.
+   <Image src={welcome} alt="The Aether Node Setup welcome dialog, partly overdrawn by boot messages" />
+
+   - *Welcome* lists what will be configured. Choose **Yes**.
    - *Hostname* offers the generated name; type a better one if you like.
+
+     <Image src={hostname} alt="Hostname dialog with aether-lab typed in" />
+
    - *Topology* asks whether one network card carries everything (**collapsed**) or the
      management, N2, N3, and N6 networks have their own cards (**separated**). For a first
      single-machine network choose collapsed.
-   - For each interface, choose **DHCP** or enter a static address.
+
+     <Image src={topology} alt="Topology dialog offering collapsed or separated" />
+
+   - For each interface, choose which card to use, then **DHCP** or a static address and gateway.
+
+     <Image src={ipMethod} alt="IP configuration dialog offering DHCP or static" />
+
    - A summary confirms what was written.
+
+     <Image src={summary} alt="Setup Complete dialog showing the hostname and network mode" />
 
    The choices go to `/etc/netplan/90-aether.yaml` and are applied immediately. Run
    `sudo aether-setup` at any time to change them.
 
-3. **Log in** at the console prompt with user `aether` and password `aether`.
+3. **Wait for the bootstrap to finish.** The console prints *Finished aether-bootstrap.service*
+   and *Started aether-ops.service* when it is done, about ten minutes after boot.
 
-   <Aside type="caution" title="Change the password">
-   Nothing forces a change, and every machine installed from this ISO has the same credentials.
-   Run `passwd` now. The same password is also used for the OnRamp Ansible user; see
-   [How the ISO works](/docs/iso/how-the-iso-works/) before changing that one.
+   <Image src={console} alt="Console showing aether-bootstrap.service finished and aether-ops.service started" />
+
+4. **Log in** at the console prompt as user `aether`.
+
+   <Aside type="danger" title="The console password does not work in ISO 0.1.0">
+   The image was built with user `aether` and, according to its README, password `aether`. On the
+   0.1.0 image the stored password hash does not match `aether` (or any obvious variation), so the
+   console login is refused, and the same mismatch means the management service cannot reach the
+   node over SSH either: deployments started from the web UI fail at the preflight step.
+
+   Until a rebuilt image fixes the hash, set a working password from a recovery shell: reboot, hold
+   Shift or press Esc at the firmware splash to get the GRUB menu, edit the Ubuntu entry, append
+   `init=/bin/bash` to the `linux` line, boot, then run `mount -o remount,rw /` and `passwd aether`
+   with the password `aether` (that is the value the service was told to use), and reboot. Set a
+   different password afterwards with `sudo aether-ops`-independent means only after reading
+   [How the ISO works](/docs/iso/how-the-iso-works/).
    </Aside>
-
-4. **Wait for the bootstrap to finish.** Check its state with:
-
-   ```bash
-   systemctl status aether-bootstrap.service
-   ls /var/lib/aether/
-   ```
-
-   While it runs, `systemctl` reports `activating` and the directory holds `bundle.tar.zst`. When
-   it finishes, the directory holds `bootstrap.done` instead and the bundle is gone.
-
-   ```text title="Expected output when finished"
-   bootstrap.done
-   ```
 
 </Steps>
 
 ## Verify
 
+Once you have a shell on the node:
+
 ```bash
 systemctl is-active rke2-server aether-ops
+ls /var/lib/aether/
 curl http://localhost:8186/healthz
 ```
 
 ```text title="Expected output"
 active
 active
+bootstrap.done
 {"status":"healthy","version":"v0.4.5","uptime":"3m12s"}
 ```
 
-`aether-ops` reports the version embedded in the ISO's bundle, which may be older than the current
-release; see the note on the [ISO index](/docs/iso/install/).
+`bootstrap.done` replaces the bundle when the bootstrap succeeds. `aether-ops` reports the version
+embedded in the ISO's bundle, which may be older than the current release; see the note on the
+[install page](/docs/iso/install/).
 
 ## Next
 

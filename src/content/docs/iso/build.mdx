@@ -1,24 +1,131 @@
 ---
 title: "Build the ISO"
-description: "Build the Aether Ops ISO from the ISO repository."
+description: "Build the Aether Ops ISO from the ISO repository: fetch the bootstrap artifacts and the Ubuntu base image, build, verify."
+products: [aether-ops-iso]
 ---
+
+import { Steps, Aside, FileTree } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Produce `aether-ops-<version>-amd64.iso` on a Linux build host. About five minutes once the
+downloads are in place; the downloads are 3.2 GB for Ubuntu and 3.7 GB for the bootstrap bundle.
 
 ## Prerequisites
 
-- TODO
+- A Debian or Ubuntu build host with about 22 GB free disk.
+- `xorriso`, `p7zip-full`, `curl`, and [`just`](https://github.com/casey/just):
+
+  ```bash
+  sudo apt install xorriso p7zip-full curl
+  curl --proto '=https' --tlsv1.2 -sSf https://just.systems/install.sh | bash -s -- --to /usr/local/bin
+  ```
+
+- A clone of the ISO repository:
+
+  ```bash
+  git clone git@github.com:aether-gui/aether-ops-iso.git
+  cd aether-ops-iso
+  just --list
+  ```
+
+Prefer not to install tools on your machine? [Build in a container](/docs/iso/build-in-a-container/).
 
 ## Steps
 
-TODO
+<Steps>
 
-## Verify
+1. **Fetch the bootstrap launcher and bundle.** These are what the ISO installs on first boot. The
+   recipe downloads both from the distribution site, verifies their checksums, and writes their
+   paths into `config.env`.
 
-TODO
+   ```bash
+   just fetch-bootstrap 2026.08.05.1   # or "latest"
+   just check-bootstrap
+   ```
+
+   `check-bootstrap` fails loudly if either file is missing. Without it, `build-iso` only warns
+   and produces an ISO that installs Ubuntu and the Aether tooling but no platform.
+
+2. **Fetch the Ubuntu base image.** Ubuntu Server 24.04.2, verified against the checksum in
+   `config.env`.
+
+   ```bash
+   just fetch-base-iso
+   ```
+
+3. **Build.**
+
+   ```bash
+   just build-iso
+   ```
+
+   The recipe extracts the base image, copies it, adds the autoinstall configuration, the
+   first-boot tooling, the launcher, and the bundle, prepends the *Aether Ops - Automated Install*
+   GRUB entry, and repacks a hybrid BIOS/UEFI image with `xorriso`. On the lab build host the
+   repack step took about a minute and the whole recipe about two.
+
+   ```text title="End of the build output"
+   Written to medium : 3379002 sectors at LBA 0
+   Writing to 'stdio:.../work/output/aether-ops-0.1.0-amd64.iso' completed successfully.
+
+   Generating checksums...
+   ```
+
+4. **Verify.**
+
+   ```bash
+   just verify
+   ```
+
+   ```text title="Expected output"
+   aether-ops-0.1.0-amd64.iso: OK
+   Verification passed.
+   ```
+
+</Steps>
+
+## What you get
+
+<FileTree>
+- work/
+  - output/
+    - aether-ops-0.1.0-amd64.iso about 6.5 GB
+    - aether-ops-0.1.0-amd64.iso.sha256
+  - bootstrap/
+    - aether-ops-bootstrap
+    - bundle.tar.zst
+  - ubuntu-base.iso
+  - base-iso/ extracted base image
+  - custom-iso/ the tree that was repacked
+</FileTree>
+
+The version in the filename comes from `ISO_VERSION` in `config.env`.
+
+<Aside type="note" title="Changing only the injected files">
+After editing the autoinstall configuration or the scripts under `target/`, `just repack` rebuilds
+the image from the prepared tree without extracting the base image again.
+</Aside>
+
+## Software bill of materials
+
+```bash
+just sbom-tier1   # the bootstrap launcher binary
+just sbom-tier2   # plus the bundle: packages and container images
+just sbom-tier3   # plus everything on the ISO, including all Ubuntu packages
+```
+
+Each tier writes SPDX JSON to `work/sbom/`. Tier 3 is large and slow; tier 2 is what a release
+carries.
+
+## Testing what you built
+
+`just test` boots the ISO in an air-gapped LXD virtual machine and runs the repository's
+verification suite end to end (install, first boot, bootstrap, snapshots, rollback, setup tool).
+`just test-setup` does the install and leaves the VM running for you to poke at; `just test-status`
+checks its platform state. Both need the DART test runner and LXD; see the
+[reference](/docs/reference/iso-justfile/) for the full recipe list.
 
 ## Next
 
-TODO
+[How the ISO works](/docs/iso/how-the-iso-works/) explains what the build put on the image.

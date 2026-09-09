@@ -1,24 +1,111 @@
 ---
 title: "Extension roles"
 description: "Install optional extension roles such as Splunk Enterprise and the OpenTelemetry collector."
+products: [aether-ops, aether-ops-web]
+status: beta
+sidebar:
+  badge:
+    text: Beta
+    variant: caution
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import editor from '../../../assets/screenshots/gui/extension-roles-01-role-editor.png';
+import assigned from '../../../assets/screenshots/gui/extension-roles-02-assigned.png';
+import values from '../../../assets/screenshots/gui/extension-roles-03-values-form.png';
 
 ## What you'll do
 
-TODO
+Turn on the extension-role feature gates, find the extension roles in the role editor, and fill in
+the values one needs before installing it. Ten minutes, plus the install itself if you go through
+with it.
+
+<Aside type="caution" title="Feature gate required">
+Extension roles are pre-release. They stay hidden until the daemon is started with the
+`splunk-enterprise` and `otel-collector` gates on; see step 1. Without the gates the role editor
+shows no *EXTENSION ROLES* section at all.
+</Aside>
 
 ## Prerequisites
 
-- TODO
+- A deployment with the `master` role installed.
+- Shell access to the management host to edit `/etc/aether-ops/features.yaml`.
+- For Splunk Enterprise: the node can download the Splunk package, or you have a mirror URL.
+
+## What extension roles are
+
+Roles from OnRamp install 5G components. Extension roles come from outside OnRamp and add
+supporting software next to the network. Version 0.5.2 ships two, both in the *observability*
+group:
+
+| Role | Installs | Needs |
+|---|---|---|
+| **Splunk Enterprise** | A Splunk Enterprise server with the HTTP Event Collector enabled (web UI on port 8000, HEC on 8088). | A node with enough disk for Splunk. |
+| **OpenTelemetry Collector (5G-Core to Splunk)** | An in-cluster collector that scrapes the core's metrics endpoint and forwards them to Splunk's HEC. Day-2 actions install a telemetry dashboard in Splunk and (re)create the metrics index. | Splunk Enterprise and the 5G core, on the master node. |
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Enable the gates** on the management host and restart the daemon:
+
+   ```yaml title="/etc/aether-ops/features.yaml"
+   features:
+     splunk-enterprise: true
+     otel-collector: true
+   ```
+
+   ```bash
+   sudo systemctl restart aether-ops
+   curl http://localhost:8186/api/v1/meta/features
+   ```
+
+   ```text title="Expected output"
+   {"enabled":["otel-collector","splunk-enterprise"]}
+   ```
+
+2. **Open the role editor.** On **Deployment**, click **Edit roles** on the master node. Below the
+   OnRamp roles a new *EXTENSION ROLES* section lists the two roles with **Add** buttons.
+
+   <Image src={editor} alt="Role editor with the EXTENSION ROLES section" />
+
+3. **Assign Splunk Enterprise.** Click its **Add**. The role is assigned immediately and shows as
+   *not installed* with **Install**, **Remove**, and **Configure**.
+
+   <Image src={assigned} alt="Splunk Enterprise assigned but not installed" />
+
+4. **Fill in the values.** Click **Configure**. The form is generated from the role's schema. Fields
+   marked with an asterisk are required.
+
+   <Image src={values} alt="Splunk Enterprise values form" />
+
+   | Field | Notes |
+   |---|---|
+   | accept license | Must be on for an unattended install. |
+   | admin user, admin password | Initial Splunk admin login. Leave the password empty and press **Derive** to have one generated. |
+   | splunk version, splunk build | Version to install and the build hash from Splunk's download URL. Defaults to 9.4.1. |
+   | download url | Override for a local mirror. Derived from version and build when empty. |
+   | install method | `deb` (default) or `tarball` into `/opt/splunk`. |
+   | hec enabled, hec port, hec token | Turn on the HTTP Event Collector on port 8088 and create the token the collector will use. Empty token means **Derive** generates one. |
+   | web port, mgmt port, receiving port | 8000, 8089, and 9997 by default. |
+
+   **Reveal secrets** shows masked values. **Derive** fills every empty generated field. **Save**
+   stores the values without installing.
+
+5. **Install.** Click **Install** on the role. The task streams in the panel like any component
+   install. Then add the OpenTelemetry collector the same way: its **Derive** step copies the HEC
+   token from the Splunk role, so configure Splunk first.
+
+</Steps>
 
 ## Verify
 
-TODO
+After both installs, **Deployment** lists the two roles as *installed* on the master node, and the
+Splunk web UI answers on port 8000 of that node with the admin login you set. The OTel collector
+role's day-2 action *install-dashboard* adds an *Aether 5G Core — Telemetry* view in Splunk.
 
 ## Next
 
-TODO
+Turn the gates off again in `features.yaml` if you only wanted a look; installed roles keep
+running either way.

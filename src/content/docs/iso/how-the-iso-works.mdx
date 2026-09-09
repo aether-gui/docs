@@ -1,6 +1,109 @@
 ---
 title: "How the ISO works"
-description: "The unattended installer, first-boot services, and disk layout."
+description: "The unattended installer, the first-boot services, and the disk layout the ISO produces."
+products: [aether-ops-iso, aether-ops-bootstrap]
 ---
 
-TODO
+import { FileTree, Aside } from '@astrojs/starlight/components';
+
+You do not need this page to install from the ISO. It is for when something goes wrong, or when
+you want to change how the image behaves.
+
+## What is on the image
+
+The ISO is Ubuntu Server 24.04.2 with three additions:
+
+<FileTree>
+- /
+  - boot/grub/grub.cfg an extra first entry, *Aether Ops - Automated Install*, chosen after 10 s
+  - nocloud/
+    - user-data the autoinstall answers
+    - meta-data empty
+  - aether/
+    - aether-ops-bootstrap the launcher
+    - bundle.tar.zst the offline bundle, about 3.5 GB
+    - aether-setup first-boot setup tool
+    - aether-setup.service
+    - aether-bootstrap.service
+    - aether-snapshot snapshot tool
+    - initramfs/ rollback hook and script
+</FileTree>
+
+The GRUB entry boots the standard Ubuntu installer kernel with `autoinstall ds=nocloud;s=/cdrom/nocloud/`,
+which tells the installer to read its answers from the `nocloud` directory instead of asking.
+
+## The unattended install
+
+The answers in `user-data` amount to:
+
+- **Storage.** The largest disk gets a GPT table with a 512 MB EFI system partition and one btrfs
+  partition for everything else, mounted with `compress=zstd:3,noatime`. No swap: swap files block
+  btrfs snapshots and Kubernetes wants swap off anyway.
+- **Identity.** Hostname `aether-node` at first, user `aether` with password `aether`, OpenSSH
+  installed with password login allowed.
+- **Packages.** None from the network. The installer is told to fall back to an offline install
+  and to skip its geographic mirror lookup, which is what makes the image usable with no internet.
+- **Shutdown.** Power off instead of reboot, so the machine cannot loop back into the installer.
+
+<Aside type="caution" title="UEFI only">
+The disk layout has no BIOS boot partition, and GRUB cannot embed itself in a btrfs partition, so
+an install started in legacy BIOS mode fails at the very end with *filesystem 'btrfs' doesn't
+support blocklists*. Boot the ISO in UEFI mode. The image itself boots either way, which is why the
+failure only shows after several minutes.
+</Aside>
+
+After the files are copied, a series of *late commands* run inside the new system:
+
+1. Move the flat btrfs root into a `@` subvolume, fix `/etc/fstab` and the GRUB configuration to
+   match, so that snapshots and rollback have something to swap.
+2. Install `aether-snapshot` and `aether-setup` into `/usr/local/bin`, and the rollback hook into
+   the initramfs.
+3. Derive the hostname from the last six hex digits of the first network card's MAC address, for
+   example `aether-80fd87`.
+4. Enable `aether-setup.service`.
+5. Take the read-only `baseline` snapshot.
+6. If the launcher and bundle are on the ISO, copy them to `/usr/local/bin/aether-ops-bootstrap`
+   and `/var/lib/aether/bundle.tar.zst`, and enable `aether-bootstrap.service`.
+
+The launcher is deliberately not run here: the installer's late commands execute in a chroot
+without systemd, where a bootstrap would appear to succeed while installing nothing.
+
+## First boot
+
+Two services start:
+
+- **`aether-bootstrap.service`** runs once, when `/var/lib/aether/bundle.tar.zst` exists, after
+  the network is up, with no timeout. It executes
+  `aether-ops-bootstrap install --bundle /var/lib/aether/bundle.tar.zst` with
+  `AETHER_ONRAMP_PASSWORD=aether` in its environment. On success it takes the read-only
+  `bootstrapped` snapshot, writes `/var/lib/aether/bootstrap.done`, and deletes the bundle, after
+  which the unit never runs again. On the lab machine this took about ten minutes.
+- **`aether-setup.service`** runs `aether-setup` on the first console until `/etc/aether/setup.conf`
+  exists. The tool asks for a hostname and network settings, writes `/etc/netplan/90-aether.yaml`,
+  applies it, records the interface roles in `/etc/aether/network.conf`, and disables itself.
+  Run `sudo aether-setup` to go through it again.
+
+Both start at the same time. Boot and bootstrap messages keep printing on the console for a while,
+so the setup dialog can look scribbled over during its first minute; it still works.
+
+<Aside type="note" title="The OnRamp password">
+`aether` is both the console login and the password the bootstrap gives the OnRamp Ansible user.
+Changing the login with `passwd` does not affect the daemon. The password the daemon uses is kept
+in `/etc/aether-ops/onramp-password`; the [bootstrap pages](/docs/bootstrap/install/) explain how
+it is chosen on a non-ISO install.
+</Aside>
+
+## What the bootstrap installs
+
+RKE2 with Helm, the SD-Core container images staged for RKE2's offline loader, the Aether OnRamp
+checkout, an offline apt repository, the `aether-ops` daemon as a systemd service, and the two OS
+users the platform needs. Details are on [How the bootstrap works](/docs/bootstrap/).
+
+## Files worth knowing
+
+| Path | Purpose |
+|---|---|
+| `/var/lib/aether/bootstrap.done` | Bootstrap finished. Its absence with the bundle still present means the bootstrap is running or failed. |
+| `/var/lib/aether-ops-bootstrap/bootstrap.log` | The bootstrap's log. |
+| `/etc/aether/setup.conf`, `/etc/aether/network.conf` | Written by `aether-setup`. |
+| `/etc/netplan/90-aether.yaml` | The network configuration `aether-setup` applied. |

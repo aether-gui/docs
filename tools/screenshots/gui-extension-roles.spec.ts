@@ -19,9 +19,10 @@ test('extension roles in the role editor', async ({ page, request }) => {
   await expect(page.getByText('EXTENSION ROLES')).toBeVisible();
   await shot(page, 'gui', 'extension-roles-01-role-editor', { fullPage: true });
 
-  const splunk = page.getByText('Splunk Enterprise', { exact: true }).locator('..').locator('..');
-  await splunk.getByRole('button', { name: 'Add', exact: true }).click();
-  await expect(page.getByRole('button', { name: 'Configure' })).toBeVisible();
+  // Splunk Enterprise is the last role in the editor, so its Add button is the
+  // last one on the page.
+  await page.getByRole('button', { name: 'Add', exact: true }).last().click();
+  await expect(page.getByRole('button', { name: 'Configure' })).toBeVisible({ timeout: 15_000 });
   await shot(page, 'gui', 'extension-roles-02-assigned', {
     locator: page.getByText('EXTENSION ROLES').locator('..'),
   });

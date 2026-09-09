@@ -20,6 +20,12 @@ The installer takes the largest disk in the machine, wipes it, and installs ther
 machine whose disks hold nothing you need.
 </Aside>
 
+<Aside type="caution" title="Boot in UEFI mode">
+The installed disk layout only works with UEFI firmware. The image starts in legacy BIOS mode too,
+but that install fails after several minutes at the bootloader step with *filesystem 'btrfs'
+doesn't support blocklists*. Pick the UEFI entry for the USB stick in your boot menu.
+</Aside>
+
 ## Prerequisites
 
 - The ISO file, `aether-ops-<version>-amd64.iso`, about 6.5 GB, and its `.sha256` file.

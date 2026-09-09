@@ -1,24 +1,70 @@
 ---
 title: "Build in a container"
-description: "Build and test the ISO inside a disposable container and VM."
+description: "Build and test the ISO inside a disposable Incus container and VM instead of installing tools on your machine."
+products: [aether-ops-iso]
 ---
+
+import { Steps } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Create a throwaway build container with every tool preinstalled, build the ISO inside it, and boot
+the result in a test VM. Ten minutes plus download time.
 
 ## Prerequisites
 
-- TODO
+- [Incus](https://linuxcontainers.org/incus/) (or LXD) on the host, with a default storage pool
+  and virtual-machine support.
+- A clone of the ISO repository and `just` on the host.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Create the build container.** The repository is bind-mounted into it at `/workspace`;
+   cloud-init installs `xorriso`, `p7zip-full`, `curl`, `wget`, `btrfs-progs`, `just`, and `syft`.
+
+   ```bash
+   just dev-create
+   ```
+
+2. **Build inside it.** Any recipe can run in the container with `dev-run`; `dev-build` is a
+   shortcut for `build-iso`.
+
+   ```bash
+   just dev-run fetch-bootstrap latest
+   just dev-run fetch-base-iso
+   just dev-build
+   ```
+
+   `just dev-shell` opens a shell in the container when you want to look around.
+
+3. **Boot the result.** `dev-test` creates a virtual machine (8 GiB, 4 CPUs, 100 GiB by default),
+   attaches the built ISO ahead of the disk in boot order, and starts it.
+
+   ```bash
+   just dev-test
+   just dev-test-console
+   ```
+
+   Detach from the console with `Ctrl+a q`. The install runs unattended and powers the VM off; start
+   it again to reach the first boot.
+
+4. **Clean up.**
+
+   ```bash
+   just dev-test-destroy   # the test VM
+   just dev-destroy        # the build container
+   just dev-clean          # both
+   ```
+
+</Steps>
 
 ## Verify
 
-TODO
+`just dev-run verify` reports the ISO checksum as OK from inside the container, and the test VM's
+console shows the *Aether Ops - Automated Install* GRUB entry within a few seconds of starting.
 
 ## Next
 
-TODO
+[Build the ISO](/docs/iso/build/) describes the recipes in more detail.

@@ -1,24 +1,56 @@
 ---
 title: "Roles"
 description: "Assign roles to nodes and understand what each role installs."
+products: [aether-ops-web]
 ---
 
-## What you'll do
+import { Image } from 'astro:assets';
+import roles from '../../../assets/screenshots/gui/setup-wizard-06-roles.png';
+import exclusive from '../../../assets/screenshots/gui/roles-01-master-exclusive.png';
 
-TODO
+A role is what a node is for. Assigning one decides which components get installed on that node
+and in what order. Roles are assigned per node in the wizard's *Roles* step and later in the
+Deployment tab's role editor; both show the same cards.
 
-## Prerequisites
+<Image src={roles} alt="The role cards offered for every node" />
 
-- TODO
+## The roles in version 0.5.2
 
-## Steps
+| Role | Installs | Notes |
+|---|---|---|
+| `master` | Kubernetes (RKE2) and the 5G core (SD-Core) | Exactly one node. The core needs at least this. |
+| `gnbsim` | gNBSim, a simulated gNB with simulated UEs | The quickest way to see traffic. Used throughout this guide. |
+| `ueransim` | UERANSIM, another gNB and UE simulator | |
+| `srsran` | srsRAN Project gNB | For real radios. |
+| `oai` | OpenAirInterface RAN | For real radios. |
+| `ocudu` | O-CU-DU RAN | For real radios; split 7.2 fronthaul. |
+| `oscric` | O-RAN SC near-RT RIC | RAN intelligent controller. |
+| `sdran` | SD-RAN intelligent RAN controller | |
+| `n3iwf` | Non-3GPP Interworking Function | Wi-Fi and other non-3GPP access into the core. |
 
-TODO
+A node can hold several roles; the management host alone with `master` and `gnbsim` is a complete
+test network.
 
-## Verify
+## Rules the UI enforces
 
-TODO
+- **One master.** Once a node holds `master`, the card on every other node is disabled and says
+  *Only one node can hold this role — currently \<node\>. Remove it there first.*
 
-## Next
+  <Image src={exclusive} alt="The master card on a second node, disabled because another node holds it" />
 
-TODO
+- **A core to deploy.** The wizard reminds you that *at least one node must have the SD-Core role
+  to deploy the 5G core network*. Without it you can still finish the wizard and go to the
+  dashboard; there is just nothing to deploy.
+- **Order of installation.** Components have tiers. Kubernetes (tier 0) goes first, the core (tier
+  1) next, then platform pieces, then RAN and simulators (tier 3). The wizard's Deploy step shows
+  the resulting order.
+
+## Where roles are stored
+
+Assignments are saved the moment you click a card; `GET /api/v1/nodes` shows each node's `roles`.
+They are also written into the OnRamp inventory (`hosts.ini`) so Ansible targets the right hosts.
+
+## Extension roles
+
+Roles from outside OnRamp appear below a divider labelled *EXTENSION ROLES* in the role editor
+once their feature gates are on. See [Extension roles](/docs/gui/extension-roles/).

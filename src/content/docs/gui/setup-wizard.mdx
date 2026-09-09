@@ -1,24 +1,136 @@
 ---
 title: "Setup wizard"
 description: "Walk through the five wizard steps from nodes to a running deployment."
+products: [aether-ops-web]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import nodes from '../../../assets/screenshots/gui/setup-wizard-01-nodes.png';
+import preflight from '../../../assets/screenshots/gui/setup-wizard-02-preflight.png';
+import fixConfirm from '../../../assets/screenshots/gui/setup-wizard-03-preflight-fix-confirm.png';
+import fixResult from '../../../assets/screenshots/gui/setup-wizard-04-preflight-fix-result.png';
+import preflightPassed from '../../../assets/screenshots/gui/setup-wizard-05-preflight-passed.png';
+import roles from '../../../assets/screenshots/gui/setup-wizard-06-roles.png';
+import rolesAssigned from '../../../assets/screenshots/gui/setup-wizard-07-roles-assigned.png';
+import config from '../../../assets/screenshots/gui/setup-wizard-08-config.png';
+import configCore from '../../../assets/screenshots/gui/setup-wizard-09-config-core.png';
+import summary from '../../../assets/screenshots/gui/setup-wizard-10-deploy-summary.png';
+import banner from '../../../assets/screenshots/gui/setup-wizard-11-deploy-banner.png';
+import installing from '../../../assets/screenshots/gui/setup-wizard-12-deploy-installing.png';
+import complete from '../../../assets/screenshots/gui/setup-wizard-13-deploy-complete.png';
 
 ## What you'll do
 
-TODO
+Take a freshly installed `aether-ops` through its five-step wizard and end with Kubernetes, the 5G
+core, and a simulated radio running. About 15 minutes of clicking and waiting; the deployment
+itself took 8 minutes on the lab machines used for these pages.
 
 ## Prerequisites
 
-- TODO
+- The web UI open in your browser, as in [Open the web UI](/docs/iso/open-the-web-ui/).
+- Optionally a second machine for the radio, prepared as in [Adding nodes](/docs/gui/adding-nodes/).
+  Everything below also works with the management host alone; skip the add-node part and give it
+  both roles.
 
 ## Steps
 
-TODO
+The wizard opens by itself the first time you visit. A row of five numbered steps runs across the
+top; completed steps get a tick and stay clickable until the deployment starts.
+
+<Steps>
+
+1. **Nodes.** The management host is already listed, tagged *LOCAL*, and ticked. Untick any host
+   you do not want in this deployment. Click **Add Node** to register another machine; the
+   [Adding nodes](/docs/gui/adding-nodes/) page walks through that dialog. Click **Continue**.
+
+   <Image src={nodes} alt="Wizard step 1, Select Nodes" />
+
+2. **Preflight.** Each node is checked for the packages, SSH access, and `aether` user a deployment
+   needs, then SSH connectivity is verified with an Ansible ping. Expand a node to see its checks.
+
+   <Image src={preflight} alt="Wizard step 2, Preflight Checks, with one fixable issue on the second node" />
+
+   A failed check with a fix shows **Auto-fix**; a node with several shows **Fix All (n)**. Fix All
+   lists what it will change and asks you to confirm.
+
+   <Image src={fixConfirm} alt="Fix All confirmation listing the fixes to apply" />
+
+   The result dialog reports what was fixed, what failed, and what was skipped. Close it, then click
+   **Re-check All**: fixes do not re-run the SSH verification by themselves, and **Continue** stays
+   disabled until every included node shows *SSH OK*.
+
+   <Image src={fixResult} alt="Fix All result: 3 fixed, 0 failed, 1 skipped" />
+   <Image src={preflightPassed} alt="Preflight with both nodes at SSH OK" />
+
+3. **Roles.** Every node shows the same grid of role cards. Click a card to assign that role.
+
+   <Image src={roles} alt="Wizard step 3, Assign Roles, before any assignment" />
+
+   For a first network: **master** on the management host and **gnbsim** on the second node (or
+   on the same host if there is only one). `master` installs Kubernetes and the 5G core and can be
+   held by one node only; the card on every other node explains this once it is taken. See
+   [Roles](/docs/gui/roles/) for what each card installs.
+
+   <Image src={rolesAssigned} alt="Roles assigned: master on the first node, gnbsim on the second" />
+
+4. **Config.** The daemon composes the OnRamp configuration for the components you chose and fills
+   in defaults from what it learned about the nodes: the interface with the default route, the
+   management host's address for the AMF, and so on. The blue box lists every default it applied
+   and where it came from.
+
+   <Image src={config} alt="Wizard step 4, Review Configuration" />
+
+   Sections below expand to the individual fields. For the lab network used here the defaults
+   were right; on a machine with several interfaces, check that `core.data_iface` and
+   `core.amf.ip` point at the network your radio will use. Edit, **Save Changes**, then
+   **Continue**.
+
+   <Image src={configCore} alt="The 5G Core section expanded" />
+
+   <Aside type="note">
+   If you reload the browser on this step, the page says *No configuration available*. Click
+   **Back** and then **Continue** to load it again.
+   </Aside>
+
+5. **Deploy.** The summary shows each node with its roles and the ordered list of installs that
+   will run: Kubernetes first, then the 5G core, then the simulator. Nothing has changed yet.
+
+   <Image src={summary} alt="Wizard step 5, Deployment summary" />
+
+   Click **Start Deployment**. The wizard closes and the dashboard opens with a banner that tracks
+   progress: *Deploying: Kubernetes (RKE2) cluster lifecycle (0/3 complete)*.
+
+   <Image src={banner} alt="Dashboard with the deployment banner" />
+
+   The **Deployment** tab shows the component being installed on each node.
+
+   <Image src={installing} alt="Deployment tab while Kubernetes is installing" />
+
+</Steps>
+
+## What to expect while it runs
+
+| Step | Time on the lab machines |
+|---|---|
+| Kubernetes (RKE2) | about 2.5 minutes |
+| 5G core (SD-Core) | about 3.5 minutes |
+| gNBSim | about 2 minutes |
+
+Overview shows the components as *down* until each finishes. When the banner disappears the
+Overview page reads *healthy* for Kubernetes and Infrastructure; 5G Network reads *degraded* until
+a radio attaches, which the [5G network](/docs/gui/5g-network/) page fixes by starting the
+simulator.
+
+<Image src={complete} alt="Overview after the deployment finished" />
 
 ## Verify
 
-TODO
+- **Overview** lists `k8s`, `5gc`, and `gnbsim` as *running* with *1 / 1* instances.
+- **Status › Kubernetes** shows *Nodes ready 1 / 1*.
+- On the management host, `curl http://localhost:8186/api/v1/onramp/state` reports each of the
+  three components as `installed`.
 
 ## Next
 
-TODO
+[5G network](/docs/gui/5g-network/) starts the simulator and shows devices registering.

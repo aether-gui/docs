@@ -1,24 +1,95 @@
 ---
 title: "Snapshots and rollback"
-description: "Filesystem snapshots created by the ISO and how to roll back."
+description: "Filesystem snapshots created by the ISO and how to roll a node back to one."
+products: [aether-ops-iso]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Learn which snapshots an ISO-installed node already has, take one of your own before a risky
+change, and roll back with a single reboot. Five minutes.
 
 ## Prerequisites
 
-- TODO
+- A node installed from the ISO. The root filesystem is btrfs with the system in a `@` subvolume;
+  that layout is what makes this work.
+
+## What the installer already did
+
+Two read-only snapshots exist on every ISO-installed node:
+
+| Snapshot | Taken |
+|---|---|
+| `baseline` | At the end of the install, before the first boot. Ubuntu plus the Aether tooling, no platform. |
+| `bootstrapped` | After the first-boot bootstrap succeeded. Kubernetes, the core images, and `aether-ops` installed. |
+
+## The tool
+
+`aether-snapshot` must run as root.
+
+```text title="aether-snapshot --help"
+Usage: aether-snapshot <command> [options]
+
+  status              Show current system snapshot state
+  list                List all available snapshots
+  create <name>       Create a snapshot of the current system
+  rollback <name>     Stage a rollback to the named snapshot (applied on reboot)
+
+  --readonly          Create a read-only snapshot (used with 'create')
+```
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **See what is there.**
+
+   ```bash
+   sudo aether-snapshot status
+   sudo aether-snapshot list
+   ```
+
+2. **Snapshot before a change.**
+
+   ```bash
+   sudo aether-snapshot create before-upgrade
+   ```
+
+   ```text title="Expected output"
+   Snapshot created: before-upgrade
+   ```
+
+3. **Roll back.** Rolling back is staged, not immediate: the command records which snapshot to
+   switch to, and the switch happens in the initramfs on the next boot, before the root filesystem
+   is mounted. The state you are leaving is saved as a snapshot first, so a rollback can itself be
+   rolled back.
+
+   ```bash
+   sudo aether-snapshot rollback before-upgrade
+   sudo reboot
+   ```
+
+   ```text title="Expected output"
+   The rollback will be applied on the next reboot.
+   The current system state will be saved as a snapshot before rollback.
+   ```
+
+</Steps>
+
+<Aside type="caution">
+Rolling back to `baseline` removes the platform bootstrap along with everything else. The bundle
+that installed it was deleted after the bootstrap succeeded, so a node rolled back to `baseline`
+needs the bootstrap artifacts copied to it again before it can be re-bootstrapped. Rolling back to
+`bootstrapped` keeps the platform and loses only what changed afterwards.
+</Aside>
 
 ## Verify
 
-TODO
+After the reboot, `sudo aether-snapshot status` reports the active state and `list` shows the
+automatically saved pre-rollback snapshot alongside the others.
 
 ## Next
 
-TODO
+[How the ISO works](/docs/iso/how-the-iso-works/) explains the subvolume layout behind this.

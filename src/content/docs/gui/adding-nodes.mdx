@@ -1,24 +1,140 @@
 ---
 title: "Adding nodes"
-description: "Add a second machine to your deployment from the web UI."
+description: "Add a second machine to your deployment from the web UI, with the daemon's SSH key or a password."
+products: [aether-ops-web, aether-ops]
 ---
+
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import dialog from '../../../assets/screenshots/gui/adding-nodes-01-dialog.png';
+import dialogPassword from '../../../assets/screenshots/gui/adding-nodes-02-dialog-password.png';
+import filled from '../../../assets/screenshots/gui/adding-nodes-03-dialog-filled.png';
+import progress from '../../../assets/screenshots/gui/adding-nodes-04-progress.png';
+import twoNodes from '../../../assets/screenshots/gui/adding-nodes-05-two-nodes.png';
 
 ## What you'll do
 
-TODO
+Prepare a second Ubuntu machine so the management host can reach it, then register it in the web
+UI. The daemon installs its monitoring agent on the new node and runs preflight on it. About five
+minutes.
 
 ## Prerequisites
 
-- TODO
+- A second machine running Ubuntu Server 24.04 with SSH enabled, reachable from the management
+  host by IP address or name.
+- A login with sudo on that machine, for the preparation step.
+
+## Two ways to authenticate
+
+The daemon connects to nodes over SSH as the `aether` user. The Add Node dialog offers two ways to
+prove who it is:
+
+- **SSH key** (default): the daemon uses the key pair generated at install time. The node must have
+  the public key in `aether`'s `authorized_keys`. Nothing secret is typed into the browser.
+- **Password**: the `aether` user's password is typed into the dialog and stored encrypted by the
+  daemon. Simpler, but a password travels and is kept.
+
+The preparation script below sets the node up for either.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Prepare the node.** On the new machine, run the target-node script from the aether-ops
+   repository. It installs `openssh-server` if missing, enables password login for SSH, creates
+   the `aether` user with password `aether` and passwordless sudo.
+
+   ```bash title="On the new node"
+   curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+     https://raw.githubusercontent.com/aether-gui/aether-ops/main/scripts/setup-target-node.sh \
+     -o setup-target-node.sh
+   sudo bash setup-target-node.sh --yes
+   ```
+
+   ```text title="End of the script's output"
+   Target Node Setup Complete
+   ==============================================
+     Packages:    already installed (openssh-server)
+     SSH:         enabled PasswordAuthentication via /etc/ssh/sshd_config.d/01-aether-password-auth.conf
+     Aether user: created user 'aether' with sudo and default password
+   ```
+
+2. **Install the daemon's key on the node** (skip this for the password method). The public key
+   lives on the management host:
+
+   ```bash title="On the management host"
+   sudo cat /var/lib/aether-ops/keys/aether_ed25519.pub
+   ```
+
+   Append that line to `/home/aether/.ssh/authorized_keys` on the node:
+
+   ```bash title="On the new node"
+   sudo install -d -m 700 -o aether -g aether /home/aether/.ssh
+   echo 'ssh-ed25519 AAAA... aether-ops managed key' | sudo tee -a /home/aether/.ssh/authorized_keys
+   sudo chown aether:aether /home/aether/.ssh/authorized_keys
+   sudo chmod 600 /home/aether/.ssh/authorized_keys
+   ```
+
+3. **Open Add Node.** In the wizard's *Nodes* step, or on the dashboard's Deployment tab, click
+   **Add Node**.
+
+   <Image src={dialog} alt="The Add Node dialog with SSH key authentication selected" />
+
+   <Tabs syncKey="node-auth">
+     <TabItem label="SSH key">
+       Leave **SSH key** selected and *Use the daemon's managed key* chosen. *Paste a private key*
+       is for a key of your own instead.
+     </TabItem>
+     <TabItem label="Password">
+       Click **Password** and enter the `aether` user's password (`aether` after the preparation
+       script; change it afterwards).
+       <Image src={dialogPassword} alt="The Add Node dialog with Password authentication selected" />
+     </TabItem>
+   </Tabs>
+
+   *Sudo Password* stays empty because the preparation script configured passwordless sudo.
+
+4. **Fill in the node.** *Node Name* is the name the UI and the Ansible inventory will use. *IP
+   Address or FQDN* is how the management host reaches it. *SSH Username* stays `aether`.
+
+   <Image src={filled} alt="Add Node dialog filled in for a node called ran-01" />
+
+5. **Click Add & Verify** and wait. The dialog shows three stages: registering the node, installing
+   the monitoring agent, and checking the node and fixing what it needs. Keep the browser tab open;
+   the whole step took about a minute on the lab machines and the dialog closes itself when done.
+
+   <Image src={progress} alt="Add Node progress: registering, installing the agent, checking" />
+
+   The node now appears in the list, ticked and included.
+
+   <Image src={twoNodes} alt="Nodes step with the management host and the new node" />
+
+</Steps>
+
+<Aside type="caution" title="If the browser tab closes mid-way">
+The daemon cancels the in-flight agent install with it. The node stays registered but without an
+agent. Ask the daemon to retry:
+
+```bash
+curl -X POST http://<host>:8186/api/v1/nodes/<node-id>/agent/deploy
+```
+
+`GET /api/v1/nodes` lists the ids.
+</Aside>
 
 ## Verify
 
-TODO
+**Status › Infrastructure** shows the new node with its agent *ready*. Or from the command line:
+
+```bash
+curl http://<host>:8186/api/v1/nodes/<node-id>/agent/status
+```
+
+```text title="Expected output"
+{"deployed":true,"port":8187,"version":"v0.5.2","reachable":true, ...}
+```
 
 ## Next
 
-TODO
+Back in the wizard, [Preflight](/docs/gui/setup-wizard/) checks the new node and installs the one
+package it usually lacks, then [Roles](/docs/gui/roles/) decides what it will run.
