@@ -1,0 +1,31 @@
+---
+title: "Aether Ops"
+description: "Install, deploy, and operate a private 5G network with Aether Ops."
+template: splash
+hero:
+  tagline: Boot the installer, open the web UI, and bring up a private 5G network.
+  actions:
+    - text: Install from the ISO
+      link: /docs/iso/install/
+      icon: right-arrow
+    - text: Use the web UI
+      link: /docs/gui/tour/
+      variant: minimal
+---
+
+import { Card, CardGrid } from '@astrojs/starlight/components';
+
+<CardGrid stagger>
+  <Card title="Start here" icon="rocket">
+    New machine, no software yet: [Install from the ISO](/docs/iso/install/) takes you from a USB stick to a running system.
+  </Card>
+  <Card title="Use the web UI" icon="laptop">
+    Already have aether-ops running? [Take the tour](/docs/gui/tour/) and then run the [setup wizard](/docs/gui/setup-wizard/).
+  </Card>
+  <Card title="Going deeper" icon="setting">
+    Building bundles or ISOs, running offline, or curious how it works: see [Advanced](/docs/advanced/).
+  </Card>
+  <Card title="Reference" icon="document">
+    Flags, subcommands, ports, and the API: see [Reference](/docs/reference/).
+  </Card>
+</CardGrid>

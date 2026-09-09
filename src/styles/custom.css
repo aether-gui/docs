@@ -1,0 +1,42 @@
+/* Accent palette matches the Aether Ops web UI (Intel blue #0068B5 primary,
+   #00C7FD accent) so screenshots and chrome read as one product. Light is
+   the default; dark keeps the same hues at reduced saturation. */
+:root {
+  --sl-color-accent-low: #d9ecf9;
+  --sl-color-accent: #0068b5;
+  --sl-color-accent-high: #003f70;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #f3f5f8;
+  --sl-color-gray-2: #e2e6ec;
+  --sl-color-gray-3: #aeb6c2;
+  --sl-color-gray-4: #6b7685;
+  --sl-color-gray-5: #3d4653;
+  --sl-color-gray-6: #262c36;
+  --sl-color-black: #14181f;
+}
+
+:root[data-theme='dark'] {
+  --sl-color-accent-low: #0b2f4d;
+  --sl-color-accent: #3f9be0;
+  --sl-color-accent-high: #bfe0fa;
+  --sl-color-white: #ffffff;
+  --sl-color-gray-1: #eef1f5;
+  --sl-color-gray-2: #c5ccd6;
+  --sl-color-gray-3: #8f9aa9;
+  --sl-color-gray-4: #5a6572;
+  --sl-color-gray-5: #3a434f;
+  --sl-color-gray-6: #262d37;
+  --sl-color-black: #151a21;
+}
+
+/* Screenshots get a hairline border and rounded corners so a white app
+   background is distinguishable from the page. */
+.sl-markdown-content img {
+  border: 1px solid var(--sl-color-gray-3);
+  border-radius: 0.5rem;
+}
+
+/* Tutorial step lists breathe a little more than default list spacing. */
+.sl-steps > li {
+  padding-bottom: 0.75rem;
+}

@@ -1,0 +1,29 @@
+{
+  "name": "aether-ops-docs",
+  "version": "0.0.0",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "astro dev",
+    "build": "astro check && astro build",
+    "preview": "astro preview",
+    "check": "astro check",
+    "shots": "playwright test -c tools/screenshots/playwright.config.ts",
+    "shots:ui": "playwright test -c tools/screenshots/playwright.config.ts --ui"
+  },
+  "dependencies": {
+    "@astrojs/check": "^0.9.10",
+    "@astrojs/starlight": "^0.42.0",
+    "astro": "^7.3.2",
+    "sharp": "^0.35.4",
+    "starlight-links-validator": "^0.26.0",
+    "starlight-sidebar-topics": "^0.9.0",
+    "typescript": "^5.9.0"
+  },
+  "devDependencies": {
+    "@playwright/test": "^1.63.0"
+  },
+  "engines": {
+    "node": ">=22"
+  }
+}

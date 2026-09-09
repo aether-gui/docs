@@ -1,0 +1,22 @@
+# build output
+dist/
+.astro/
+
+# dependencies
+node_modules/
+
+# screenshot rig artifacts (traces, videos); PNGs under src/assets are committed
+tools/screenshots/.artifacts/
+tools/screenshots/test-results/
+tools/console/work/
+
+# environment
+.env
+.env.*
+!.env.example
+
+# editors and OS
+.DS_Store
+.idea/
+.vscode/
+*.swp
