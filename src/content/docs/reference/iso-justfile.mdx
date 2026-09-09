@@ -1,6 +1,71 @@
 ---
 title: "ISO build recipes"
-description: "Recipes and configuration keys of the ISO build."
+description: "Every just recipe in the aether-ops-iso repository and the keys in config.env."
+products: [aether-ops-iso]
 ---
 
-TODO
+The ISO repository is driven by [`just`](https://github.com/casey/just). Run `just --list` in the
+repository root to see the recipes for your checkout; the list below is from `main` as of
+September 2026.
+
+## Build
+
+| Recipe | Purpose |
+|---|---|
+| `build-iso` | Build the Aether Ops ISO into `work/output/`. Runs `check-deps` and `fetch-base-iso` first. |
+| `check-bootstrap` | Fail unless both bootstrap artifacts named in `config.env` exist. Run it before a full build to guarantee the platform is included. |
+| `check-deps` | Check that `xorriso`, `7z`, and `sha256sum` are installed. |
+| `fetch-base-iso` | Download and verify the Ubuntu base ISO. |
+| `fetch-bootstrap [version]` | Download the bootstrap launcher and bundle for a version (`latest` by default) from the distribution site, verify their checksums, and write their paths into `config.env`. |
+| `repack` | Repack the ISO from an already prepared `work/custom-iso` without re-extracting the base image. |
+| `verify` | Verify the checksum of the built ISO. |
+| `clean` | Remove `work/`. |
+
+## Supply chain
+
+| Recipe | Purpose |
+|---|---|
+| `sbom` | Alias for `sbom-tier1`. |
+| `sbom-tier1` | SBOM of the bootstrap launcher binary only. |
+| `sbom-tier2` | Tier 1 plus the bootstrap bundle (vendored packages and container images). |
+| `sbom-tier3` | Tier 2 plus the entire ISO contents. |
+
+Output is written as SPDX JSON to `work/sbom/`.
+
+## Test
+
+| Recipe | Purpose |
+|---|---|
+| `test` | Build the ISO, then run the full air-gapped install and verification suite under DART. |
+| `test-only` | Run the suite against an already built ISO. |
+| `test-debug` | Run the suite with stop-on-error and verbose output. |
+| `test-setup` | Build a full ISO and leave the installed VM running for inspection. |
+| `test-setup-console` | Run the first-boot setup TUI over the current terminal instead of the VM's VGA console. |
+| `test-status` | Check the platform state of a setup-only VM. |
+
+## Build container
+
+| Recipe | Purpose |
+|---|---|
+| `dev-create` | Create the Incus build container with every dependency installed. |
+| `dev-shell` | Open a shell in the build container. |
+| `dev-build [args]` | Run `build-iso` inside the container. |
+| `dev-run <recipe>` | Run any recipe inside the container. |
+| `dev-test [mem] [cpu] [disk]` | Launch a VM that boots the built ISO (defaults 8 GiB, 4 CPUs, 100 GiB). |
+| `dev-test-console` | Attach to the test VM's console. |
+| `dev-test-destroy` | Stop and delete the test VM. |
+| `dev-destroy` | Stop and delete the build container. |
+| `dev-clean` | Both of the above. |
+
+## config.env
+
+| Key | Purpose |
+|---|---|
+| `UBUNTU_VERSION` | Ubuntu Server release to build on (`24.04.2`). |
+| `UBUNTU_ISO_URL` | Where the base ISO is downloaded from. |
+| `UBUNTU_ISO_SHA256` | Expected checksum of the base ISO. |
+| `BOOTSTRAP_BIN` | Path to the bootstrap launcher to embed. Written by `fetch-bootstrap`. |
+| `BOOTSTRAP_BUNDLE` | Path to the bundle to embed. Written by `fetch-bootstrap`. |
+| `BOOTSTRAP_VERSION` | Bootstrap release used by `fetch-bootstrap` (`latest` resolves to the current one). |
+| `ISO_LABEL` | Volume label of the produced ISO (`AETHER_OPS`). |
+| `ISO_VERSION` | Version stamped into the output filename (`aether-ops-<version>-amd64.iso`). |

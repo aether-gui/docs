@@ -1,6 +1,45 @@
 ---
 title: "Ports and paths"
-description: "Network ports and filesystem locations used by Aether Ops."
+description: "Network ports and filesystem locations used by aether-ops, its node agent, the bootstrap, and the ISO."
 ---
 
-TODO
+## Ports
+
+| Port | Where | Purpose |
+|---|---|---|
+| 8186/tcp | management host | `aether-ops` API and web UI. Binds to `127.0.0.1` unless `AETHER_LISTEN` says otherwise. |
+| 8187/tcp | every managed node | `aether-ops-agent`, deployed by the daemon over SSH and reached with mTLS. |
+| 22/tcp | every managed node | SSH from the daemon as the `aether` user. |
+| 9345/tcp, 6443/tcp | master node | RKE2 supervisor and Kubernetes API, created by the `k8s` component. |
+
+## Paths on the management host
+
+| Path | Purpose |
+|---|---|
+| `/usr/local/bin/aether-ops` | The daemon binary. |
+| `/etc/systemd/system/aether-ops.service` | Service unit. Runs as user `aether-ops`. |
+| `/etc/aether-ops/env` | Environment file read by the unit; the place to set `AETHER_LISTEN` and `AETHER_API_TOKEN`. |
+| `/etc/aether-ops/features.yaml` | Feature gate settings (optional). |
+| `/etc/aether-ops/onramp-password` | Password of the `aether` OS user, written at install time (mode 0640). |
+| `/var/lib/aether-ops/` | State database and working data. |
+| `/var/lib/aether-ops/keys/aether_ed25519` | The daemon's managed SSH key pair. Its `.pub` file is what target nodes must trust. |
+| `/var/lib/aether-ops/aether-onramp/` | The OnRamp checkout the daemon drives. |
+
+## Paths on a bootstrapped host
+
+| Path | Purpose |
+|---|---|
+| `/var/lib/aether-ops-bootstrap/state.json` | Component state recorded by `aether-ops-bootstrap`. |
+| `/var/lib/aether-ops-bootstrap/bootstrap.log` | Install log (mode 0600). |
+| `/var/lib/aether-ops/apt-repo/` | Offline apt repository staged from the bundle. |
+| `/var/lib/rancher/rke2/` | RKE2 data, including staged airgap images. |
+
+## Paths on an ISO-installed host
+
+| Path | Purpose |
+|---|---|
+| `/var/lib/aether/bundle.tar.zst` | The embedded bundle, deleted after a successful first-boot bootstrap. |
+| `/var/lib/aether/bootstrap.done` | Stamp written when the first-boot bootstrap succeeded. |
+| `/etc/aether/setup.conf`, `/etc/aether/network.conf` | Written by `aether-setup`. |
+| `/etc/netplan/90-aether.yaml` | Network configuration written by `aether-setup`. |
+| `/usr/local/bin/aether-setup`, `/usr/local/bin/aether-snapshot` | First-boot setup and snapshot tools. |

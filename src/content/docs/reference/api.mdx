@@ -1,6 +1,77 @@
 ---
 title: "REST API"
-description: "Where the API lives, how to authenticate, and how errors look."
+description: "Where the aether-ops API lives, how to browse it, how to authenticate, and what errors look like."
+products: [aether-ops]
 ---
 
-TODO
+Everything the web UI does goes through the REST API of the `aether-ops` daemon, so anything you can
+click you can also script.
+
+## Where it is
+
+| What | URL |
+|---|---|
+| API base | `http://<host>:8186/api/v1/` |
+| Interactive reference | `http://<host>:8186/docs` |
+| OpenAPI 3.1 document | `http://<host>:8186/openapi.json` |
+| Health check | `http://<host>:8186/healthz` |
+
+The reference at `/docs` is generated from the running daemon, so it always matches the installed
+version. Use it rather than a copy in these docs.
+
+```bash title="Quick checks"
+curl http://localhost:8186/healthz
+curl http://localhost:8186/api/v1/meta/version
+curl http://localhost:8186/api/v1/nodes
+```
+
+```json title="Expected output of /healthz"
+{"status":"healthy","version":"0.5.2","uptime":"2s"}
+```
+
+## Authentication
+
+By default there is none: every request is accepted. Set `AETHER_API_TOKEN` in `/etc/aether-ops/env`
+(or pass `--api-token`) and restart the daemon to require a bearer token on every path under `/api/`:
+
+```bash
+curl -H "Authorization: Bearer $TOKEN" http://localhost:8186/api/v1/nodes
+```
+
+`/healthz`, `/openapi.json`, `/docs`, and the web UI itself stay open. The web UI asks for the
+token when one is configured.
+
+## Resource groups
+
+| Prefix | What it covers |
+|---|---|
+| `/meta/*` | Version, build, runtime, configuration, providers, feature gates. |
+| `/system/*` | CPU, memory, disks, OS, network interfaces of the host running the daemon. |
+| `/nodes` | Managed nodes, their facts, and the per-node agent. |
+| `/preflight` | Readiness checks and their fixes. |
+| `/wizard` | Setup wizard state; `DELETE /wizard` re-arms the wizard. |
+| `/roles` | The merged role catalog (OnRamp roles plus extension roles). |
+| `/onramp/*` | Components, actions, configuration, deployment plans, apply runs, and tasks. |
+| `/extensions/*` | Extension roles: schema, values, state, actions. |
+| `/deployments/{id}/*` | Per-deployment views: members, events, SD-Core subscribers, slices, inventory, metrics, status rollups, backup and restore. |
+| `/tunings` | Host tuning profiles. |
+
+## Errors
+
+Errors are RFC 9457 problem documents:
+
+```json title="GET /api/v1/nodes/nope"
+{
+  "$schema": "https://<host>:8186/schemas/ErrorModel.json",
+  "title": "Not Found",
+  "status": 404,
+  "detail": "node not found",
+  "errors": [{ "message": "no node with id nope" }]
+}
+```
+
+## Long-running operations
+
+Installing a component returns a task; the wizard's Deploy step submits an apply run that groups
+several tasks. Poll `GET /api/v1/onramp/tasks/{id}` or `GET /api/v1/onramp/apply-runs/{id}` until
+`status` is terminal. Deployments take tens of minutes.

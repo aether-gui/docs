@@ -1,6 +1,93 @@
 ---
 title: "aether-ops CLI"
-description: "Every flag and environment variable of the aether-ops daemon."
+description: "Every flag and environment variable of the aether-ops daemon, as printed by aether-ops --help in version 0.5.2."
+products: [aether-ops]
 ---
 
-TODO
+`aether-ops` is a single long-running daemon. It has no subcommands: everything is a flag, and every
+flag can also be set through the environment variable named next to it. When the daemon runs under
+systemd, those variables come from `/etc/aether-ops/env`.
+
+```bash title="Print the flag table for your installed version"
+aether-ops --help
+```
+
+## Default options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `-v`, `--version` | | | Print version information and exit. |
+| `-d`, `--debug` | `AETHER_DEBUG` | `false` | Verbose logging and diagnostic output. |
+| `-l`, `--listen` | `AETHER_LISTEN` | `127.0.0.1:8186` | Address and port the API and web UI listen on. See [Open the web UI](/docs/iso/open-the-web-ui/). |
+
+## Execution options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `-u`, `--exec-user` | `AETHER_EXEC_USER` | | User account under which API commands are executed. |
+| `-e`, `--exec-env` | `AETHER_EXEC_ENV` | | Environment variables passed to the command execution context. |
+
+## Security options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--tls` | `AETHER_TLS` | `false` | Enable TLS. Generates a self-signed certificate when no certificate and key are given. |
+| `-t`, `--tls-cert` | `AETHER_TLS_CERT` | | Path to the TLS certificate. |
+| `-k`, `--tls-key` | `AETHER_TLS_KEY` | | Path to the TLS private key. |
+| `-m`, `--mtls-ca-cert` | `AETHER_MTLS_CA_CERT` | | CA certificate for client verification; enables mTLS. |
+| `--api-token` | `AETHER_API_TOKEN` | | Bearer token. When set, every request under `/api/` needs `Authorization: Bearer <token>`. |
+| `-r`, `--enable-rbac` | `AETHER_ENABLE_RBAC` | `false` | Role-based access control middleware. |
+| `--cors-origins` | `AETHER_CORS_ORIGINS` | | Comma-separated allowed CORS origins, for example `http://localhost:5173`. |
+| `--encryption-key` | `AETHER_ENCRYPTION_KEY` | | 32-byte key for node passwords; generated when absent. |
+
+## Frontend options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `-f`, `--serve-frontend` | `AETHER_SERVE_FRONTEND` | `true` | Serve the web UI from the embedded files or a custom directory. |
+| `--frontend-dir` | `AETHER_FRONTEND_DIR` | | Serve the web UI from this directory instead of the embedded copy. |
+
+## Storage options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--data-dir` | `AETHER_DATA_DIR` | `/var/lib/aether-ops` | Directory for the persistent state database. |
+
+## Metrics options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--metrics-interval` | `AETHER_METRICS_INTERVAL` | `10s` | How often system metrics are collected. |
+| `--metrics-retention` | `AETHER_METRICS_RETENTION` | `24h` | How long historical metrics are kept. |
+
+## OnRamp options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--onramp-dir` | `AETHER_ONRAMP_DIR` | `{data-dir}/aether-onramp` | Path to the aether-onramp checkout. |
+| `--onramp-version` | `AETHER_ONRAMP_VERSION` | `main` | Tag, branch, or commit aether-onramp is pinned to. |
+| `--onramp-user` | `AETHER_ONRAMP_USER` | `aether` | `ansible_user` written into `hosts.ini`. |
+| `--onramp-password-file` | `AETHER_ONRAMP_PASSWORD_FILE` | `/etc/aether-ops/onramp-password` | File holding the Ansible password. Ignored when the key file below is readable. |
+| `--onramp-key-file` | `AETHER_ONRAMP_KEY_FILE` | `/var/lib/aether-ops/keys/aether_ed25519` | SSH private key the daemon uses for the `aether` user. When readable, `hosts.ini` gets `ansible_ssh_private_key_file` and no password. |
+
+## MCP options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--mcp` | `AETHER_MCP` | `false` | Enable the MCP server over stdio. See [MCP server](/docs/running/mcp/). |
+| `--mcp-listen` | `AETHER_MCP_LISTEN` | | Address for the MCP StreamableHTTP transport. |
+
+## Feature options
+
+| Flag | Env | Default | Purpose |
+|---|---|---|---|
+| `--feature-gates` | `AETHER_FEATURE_GATES` | | Comma-separated gate settings, for example `splunk-enterprise=true,otel-collector=false`. Overrides the features file. |
+| `--features-file` | `AETHER_FEATURES_FILE` | `/etc/aether-ops/features.yaml` | YAML file of gate settings. A missing file leaves every gate at its default. |
+
+## Version
+
+```text title="aether-ops --version"
+aether-ops 0.5.2 (branch: HEAD, commit: fadd97a, built: 2026-09-09T02:33:17Z)
+```
+
+The same information is available while the daemon runs at `GET /api/v1/meta/version`.

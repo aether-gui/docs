@@ -3,4 +3,44 @@ title: "Glossary"
 description: "Terms used across these docs."
 ---
 
-TODO
+**Aether** — the open-source private 4G/5G platform from the Open Networking Foundation that Aether Ops deploys and manages.
+
+**Aether Ops** — the product: the `aether-ops` daemon, its web UI, the offline bootstrap, and the ISO.
+
+**aether-ops** — the management daemon. Serves the API and web UI on port 8186 and drives OnRamp.
+
+**aether-ops-agent** — a small service the daemon installs on every managed node (port 8187) to collect facts and health.
+
+**aether-ops-bootstrap** — the offline installer: a launcher binary that unpacks a bundle and installs everything on a host with no internet access.
+
+**Bundle** — `bundle.tar.zst`, everything the bootstrap needs: packages, container images, RKE2, Helm, charts, OnRamp, and the aether-ops binary.
+
+**Component** — a deployable unit OnRamp knows how to install: `k8s`, `5gc`, `gnbsim`, `srsran`, and so on.
+
+**Deployment** — the set of nodes, roles, and components managed together. The daemon creates one called *Default Deployment*.
+
+**Extension role** — an optional role outside OnRamp, such as Splunk Enterprise or the OpenTelemetry collector. Hidden until its feature gate is enabled.
+
+**Feature gate** — an on/off switch for pre-release functionality, set in `/etc/aether-ops/features.yaml` or with `--feature-gates`.
+
+**gNB** — a 5G base station. **gNBSim** simulates one, plus UEs, for testing without radios.
+
+**ISO** — the bootable installer image that installs Ubuntu, then runs the bootstrap on first boot.
+
+**Management host** — the machine running `aether-ops`. In a single-machine setup it is also the master node.
+
+**Master** — the role that installs Kubernetes (RKE2) and SD-Core. Only one node can hold it.
+
+**Node** — a machine the daemon manages over SSH. The management host is registered automatically as the local node.
+
+**OnRamp** — Aether OnRamp, the Ansible toolchain that actually installs Kubernetes, SD-Core, and RAN components. The daemon drives it for you.
+
+**Preflight** — checks that a node has what a deployment needs (packages, SSH access, the `aether` user), with one-click fixes.
+
+**Role** — what a node is for. Assigning a role decides which components are installed on it.
+
+**SD-Core** — the open-source 5G core Aether deploys (AMF, SMF, UPF, and friends).
+
+**UE** — user equipment: a phone, modem, or simulated device that attaches to the network.
+
+**Wizard** — the five-step first-run flow in the web UI: Nodes, Preflight, Roles, Config, Deploy.

@@ -1,6 +1,67 @@
 ---
 title: "aether-ops-bootstrap CLI"
-description: "Subcommands and flags of the bootstrap launcher."
+description: "Subcommands, flags, and roles of the offline bootstrap launcher, as printed by aether-ops-bootstrap help in v0.4.0."
+products: [aether-ops-bootstrap]
 ---
 
-TODO
+The launcher is a single static binary. Every command except `version`, `state`, and `diagnose`
+takes `--bundle <path>`, and all of them must run as root.
+
+```text title="aether-ops-bootstrap help"
+Usage: aether-ops-bootstrap <command> [flags]
+```
+
+## Commands
+
+| Command | Purpose |
+|---|---|
+| `install` | Full bootstrap from scratch. Refuses to run over a prior successful install unless `--force` is given. |
+| `upgrade` | Compare the bundle manifest to the recorded state and apply only the deltas. |
+| `repair` | Re-run every reconciliation step regardless of recorded state. |
+| `check` | Preflight and plan only. Makes no changes. |
+| `inspect` | Print the bundle's manifest: contents, versions, and provenance. Add `--json` for machine-readable output. |
+| `diagnose` | Collect a diagnostic tarball for remote troubleshooting. |
+| `state` | Print the current state file. |
+| `version` | Print the launcher version and the installed bundle version. |
+
+## Flags
+
+| Flag | Applies to | Purpose |
+|---|---|---|
+| `--bundle <path>` | install, upgrade, repair, check, inspect | Path to `bundle.tar.zst`. Required. |
+| `--force` | install | Override a prior successful install. |
+| `--roles <roles>` | install, upgrade, repair, check | Comma-separated node roles. Omit to install every component (single-node mode). |
+| `--verbose`, `-v` | install, upgrade, repair, check | Stream subprocess output (dpkg and others) live to stderr. |
+| `--onramp-password <pw>` | install, upgrade, repair | Password for the OnRamp Ansible user. |
+| `--json` | inspect | Emit the parsed bundle manifest as JSON. |
+| `--output <dir>` | diagnose | Where to write the diagnostic tarball. Defaults to `/tmp`. |
+
+## OnRamp password sources
+
+The password for the `aether` OS user is resolved in this order:
+
+1. `--onramp-password`
+2. the `AETHER_ONRAMP_PASSWORD` environment variable
+3. `aether_ops.onramp_password` in the bundle spec
+4. a random password, logged to stderr and to the bootstrap log
+
+## Roles
+
+| Role | Aliases | Components |
+|---|---|---|
+| `mgmt` | `management` | Management plane: aether-ops and Ansible. |
+| `core` | `sd-core` | SD-Core control plane: RKE2 and Helm. |
+| `ran` | `srs-ran`, `ocudu` | Radio access network host preparation. |
+
+Roles can be combined: `--roles mgmt,core`. With no `--roles`, everything is installed on the one host.
+
+## Files
+
+| Path | Purpose |
+|---|---|
+| `/var/lib/aether-ops-bootstrap/state.json` | Recorded state of every component; read by `upgrade`, `repair`, `state`, and `version`. |
+| `/var/lib/aether-ops-bootstrap/bootstrap.log` | Install log (mode 0600). Contains the generated OnRamp password when one was generated. |
+
+```text title="aether-ops-bootstrap version"
+aether-ops-bootstrap v0.4.0
+```
