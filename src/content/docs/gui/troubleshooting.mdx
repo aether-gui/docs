@@ -1,6 +1,82 @@
 ---
 title: "Troubleshooting"
-description: "Problems seen while following this guide and how to get past them."
+description: "Problems met while following this guide on aether-ops 0.5.2 and ISO 0.1.0, and how to get past them."
 ---
 
-TODO
+Every entry here was reproduced while writing these pages. Version numbers matter; check yours
+against the header of each item.
+
+## The web UI does not load from another machine
+
+`aether-ops` listens on `127.0.0.1` until told otherwise. Set `AETHER_LISTEN` in
+`/etc/aether-ops/env` and restart; see [Open the web UI](/docs/iso/open-the-web-ui/). On an
+ISO-installed host the file does not exist yet, so create it.
+
+## Add Node stops with the node listed but no agent
+
+The browser tab was closed or reloaded while the *Adding …* dialog was open, which cancels the
+agent install on the server side. Retry it:
+
+```bash
+curl -X POST http://<host>:8186/api/v1/nodes/<node-id>/agent/deploy
+```
+
+## Preflight shows *SSH Pending* and Continue is disabled
+
+Click **Re-check All**. The SSH verification runs an Ansible ping and its result is not kept across
+a page reload; **Continue** only enables once every included node shows *SSH OK*.
+
+## Config step says *No configuration available*
+
+The page was reloaded on step 4. Click **Back**, then **Continue**; the configuration is composed
+again on the way in.
+
+## gNBSim runs but no UEs appear
+
+The *gnbsim run* task reports success as soon as the simulator containers are started, even if
+they exit immediately. Check on the gNBSim node:
+
+```bash
+docker logs gnbsim-1 2>&1 | tail
+```
+
+With aether-ops 0.5.2, OnRamp `main` at commit `2d00e03`, and the gNBSim 2.3.0 image, the containers
+stop with *dnn is required for profile type 'custom'* and then *sNssai is required for profile
+type 'custom'*: the OnRamp profile files carry a disabled custom profile that the simulator
+validates anyway. The workaround is to complete that profile in the daemon's OnRamp checkout on
+the management host and run the action again:
+
+```bash title="On the management host"
+cd /var/lib/aether-ops/aether-onramp/deps/gnbsim/config
+for f in gnbsim-s1-p1.yaml gnbsim-s1-p2.yaml; do
+  sudo sed -i '/profileType: custom/a\      dnn: "internet"\n      sNssai:\n        sst: 1\n        sd: 010203' "$f"
+done
+```
+
+Then **5G Network › Core › Operational Actions › gnbsim run** once more. UEs registered within a
+few seconds on the lab machines.
+
+## ISO install ends with *filesystem 'btrfs' doesn't support blocklists*
+
+The machine booted the stick in legacy BIOS mode. Boot it in UEFI mode; see
+[Install the operating system](/docs/iso/install/).
+
+## ISO console rejects `aether` / `aether`
+
+Known problem in ISO 0.1.0; the recovery steps are on [First boot](/docs/iso/first-boot/).
+
+## Deployment fails at preflight on an ISO-installed host
+
+Same cause as the login problem: the management service uses the password `aether` for the
+`aether` user and the account does not have it. Fix the password as described on
+[First boot](/docs/iso/first-boot/) and run **Re-check All**.
+
+## Where the logs are
+
+| What | Where |
+|---|---|
+| The daemon | `journalctl -u aether-ops -f` on the management host |
+| A component install | The task panel in the UI, or `GET /api/v1/onramp/tasks/{id}` (`output` field) |
+| The bootstrap | `/var/lib/aether-ops-bootstrap/bootstrap.log` |
+| The ISO installer | `/var/log/installer/` on the installed system |
+| RKE2 | `journalctl -u rke2-server` on the master node |

@@ -1,24 +1,82 @@
 ---
 title: "Upgrade and repair"
-description: "Apply a newer bundle or re-apply the current one."
+description: "Apply a newer bundle to a bootstrapped host, or re-apply the current one after something broke."
+products: [aether-ops-bootstrap]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Move a bootstrapped host to a newer bundle, or put a damaged host back to the state its bundle
+describes. Ten minutes plus the run.
 
 ## Prerequisites
 
-- TODO
+- A host installed with `aether-ops-bootstrap`; `sudo aether-ops-bootstrap state` shows its
+  components.
+- The launcher and the bundle to apply, for example under `/opt/aether/bootstrap/`.
+
+## How it decides what to do
+
+Both commands read `/var/lib/aether-ops-bootstrap/state.json`, compare each component's recorded
+version with the bundle's manifest, and plan actions:
+
+| Command | Applies |
+|---|---|
+| `upgrade` | Only components whose version differs from the bundle. Components at the same version are reported *up to date*. |
+| `repair` | Every component, regardless of recorded state. |
+
+Roles recorded at install time are reused unless `--roles` is given again. `check --bundle <new>`
+shows the plan either command would run.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Verify and inspect the new bundle.**
+
+   ```bash
+   sha256sum -c bundle.tar.zst.sha256
+   sudo ./aether-ops-bootstrap inspect --bundle bundle.tar.zst
+   ```
+
+2. **Preview the delta.**
+
+   ```bash
+   sudo ./aether-ops-bootstrap check --bundle bundle.tar.zst
+   ```
+
+   Components with nothing to do print *up to date*; the rest list their actions.
+
+3. **Apply.**
+
+   ```bash
+   sudo -E ./aether-ops-bootstrap upgrade --bundle bundle.tar.zst
+   ```
+
+   or, to re-apply the bundle already installed:
+
+   ```bash
+   sudo -E ./aether-ops-bootstrap repair --bundle bundle.tar.zst
+   ```
+
+   Set `AETHER_ONRAMP_PASSWORD` to the existing OnRamp password first; a run that would generate a
+   new password for an existing `aether` user stops instead.
+
+</Steps>
+
+<Aside type="note" title="What an upgrade does not touch">
+The daemon's state database under `/var/lib/aether-ops` and the deployment running on the
+cluster are left alone. Upgrading RKE2 restarts the cluster, which interrupts the 5G core until
+its pods come back.
+</Aside>
 
 ## Verify
 
-TODO
+`sudo ./aether-ops-bootstrap version` prints the launcher version and the installed bundle
+version; `state` shows the new versions and a new entry in `history`.
 
 ## Next
 
-TODO
+[Inspect and diagnose](/docs/bootstrap/inspect-and-diagnose/) when a run fails.

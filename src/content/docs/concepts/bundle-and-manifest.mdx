@@ -1,6 +1,48 @@
 ---
 title: "Bundle and manifest"
-description: "What is inside a bootstrap bundle and how the manifest describes it."
+description: "What is inside a bootstrap bundle and how manifest.json describes it."
+products: [aether-ops-bootstrap]
 ---
 
-TODO
+A bundle is a zstd-compressed tar archive. Its first entry is `manifest.json`, which the launcher
+reads before it trusts anything else in the archive.
+
+## Manifest, schema 2
+
+```json title="manifest.json (shape)"
+{
+  "schema_version": 2,
+  "bundle_version": "2026.08.05.1",
+  "bundle_sha256": "…",
+  "build_info": { "go_version": "go1.26.3", "git_sha": "2f8f351", "builder": "build-bundle", "timestamp": "2026-08-05T17:47:06Z" },
+  "components": {
+    "debs": …, "apt_repo": …, "rke2": …, "helm": …, "aether_ops": …,
+    "onramp": …, "helm_charts": …, "images": …, "templates": …
+  }
+}
+```
+
+Every file a component ships is listed with its path, SHA-256, and size, and the launcher verifies
+each one as it installs. Two components carry extra provenance:
+
+- **`aether_ops`** records how the daemon was obtained: `mode` of `release`, `source`, or `local`,
+  with the repository and ref or the local path, and the resolved commit.
+- **`onramp`** records the checkout's commit, a checksum of the whole tree after patching, and the
+  list of patches applied, each with its kind (`builtin`, `user`, or `post-build`), target file,
+  and timestamp. This is what `inspect` prints under *Patches*.
+
+Schema versions are not forward compatible on purpose: a launcher that reads a bundle with a
+schema it does not know stops with an error instead of guessing.
+
+## Integrity
+
+There is no signature. Integrity is a chain of SHA-256 checksums: the `.sha256` sidecar for the
+archive, `bundle_sha256` inside the manifest for the archive as built, per-file checksums inside
+the manifest, and the OnRamp tree checksum for drift detection. The launcher's release archive
+comes with a `checksums.txt`. The apt repository inside the bundle is marked trusted rather than
+GPG-signed.
+
+## Sizes
+
+The bundle used for these docs is 3.7 GB: the container images are most of it, the RKE2 airgap
+archives and the apt repository most of the rest.

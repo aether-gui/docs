@@ -55,8 +55,11 @@ test.describe.serial('setup wizard', () => {
 
   test('preflight step', async ({ page }) => {
     await page.goto('/setup');
-    await expect(page.getByText('Select Nodes')).toBeVisible();
-    await page.getByRole('button', { name: 'Continue' }).click();
+    // The wizard resumes at the first incomplete step, so this may land on
+    // Nodes (first run) or directly on Preflight (re-run).
+    if (await page.getByText('Select Nodes').isVisible().catch(() => false)) {
+      await page.getByRole('button', { name: 'Continue' }).click();
+    }
     await expect(page.getByText('Preflight Checks')).toBeVisible();
     await page.waitForTimeout(3000);
     await settle(page, /Checking\.\.\.|Running\.\.\./);
@@ -82,16 +85,17 @@ test.describe.serial('setup wizard', () => {
 
   test('roles step', async ({ page }) => {
     await page.goto('/setup');
-    await expect(page.getByText('Preflight Checks')).toBeVisible();
     await page.waitForTimeout(2000);
-    // A reload forgets the SSH verification result; it has to be re-run.
-    if (await page.getByText('SSH Pending').count()) {
-      await page.getByRole('button', { name: 'Re-check All' }).click();
-      await page.waitForTimeout(3000);
+    if (await page.getByText('Preflight Checks').isVisible().catch(() => false)) {
+      // A reload forgets the SSH verification result; it has to be re-run.
+      if (await page.getByText('SSH Pending').count()) {
+        await page.getByRole('button', { name: 'Re-check All' }).click();
+        await page.waitForTimeout(3000);
+      }
+      await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled({ timeout: 5 * 60_000 });
+      await page.getByRole('button', { name: 'Continue' }).click();
     }
-    await expect(page.getByRole('button', { name: 'Continue' })).toBeEnabled({ timeout: 5 * 60_000 });
-    await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Assign Roles')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Assign Roles' })).toBeVisible();
     await shot(page, 'gui', 'setup-wizard-06-roles', { fullPage: true });
 
     // First "master" card belongs to the local node; second "gnbsim" card to
@@ -110,9 +114,9 @@ test.describe.serial('setup wizard', () => {
 
   test('config step', async ({ page }) => {
     await page.goto('/setup');
-    await expect(page.getByText('Assign Roles')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Assign Roles' })).toBeVisible();
     await page.getByRole('button', { name: 'Continue' }).click();
-    await expect(page.getByText('Review Configuration')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Review Configuration' })).toBeVisible();
     await expect(page.getByText(/defaults applied from your node configuration/)).toBeVisible({ timeout: 60_000 });
     await shot(page, 'gui', 'setup-wizard-08-config');
     await page.getByText('5G Core', { exact: true }).click();
@@ -123,7 +127,7 @@ test.describe.serial('setup wizard', () => {
   test('deploy step', async ({ page, request }) => {
     test.setTimeout(2 * 60 * 60_000);
     await page.goto('/setup');
-    await expect(page.getByText('Review Configuration')).toBeVisible();
+    await expect(page.getByRole('heading', { name: 'Review Configuration' })).toBeVisible();
     await page.getByRole('button', { name: 'Continue' }).click();
     await expect(page.getByText('Deployment Summary')).toBeVisible();
     await shot(page, 'gui', 'setup-wizard-10-deploy-summary');

@@ -1,24 +1,55 @@
 ---
 title: "Patch a bundle"
-description: "Change files inside an existing bundle without rebuilding it."
+description: "Change files inside an existing bundle's OnRamp tree without rebuilding it."
+products: [aether-ops-bootstrap]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Replace one or more files in a bundle's OnRamp tree, for example a variables file for a specific
+site, and produce a new bundle. A minute or two.
 
 ## Prerequisites
 
-- TODO
+- The bootstrap repository, built with `make build-patch-bundle` to get `dist/patch-bundle`.
+- A bundle to patch.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Replace a file.** Paths are relative to the OnRamp tree inside the bundle.
+
+   ```bash
+   ./dist/patch-bundle --in bundle.tar.zst --out bundle-site-a.tar.zst \
+     --replace vars/main.yml=./site-a/main.yml
+   ```
+
+   `--replace` repeats for several files. `--output-dir` instead of `--out` writes
+   `<basename>-patched.tar.zst` into a directory.
+
+2. **Or declare patches in a file.** `--patches patches.yaml` takes a YAML list of patches and is
+   mutually exclusive with `--replace`.
+
+3. **Check the result.** `inspect` records the patch in the bundle's *Patches* section, and the
+   OnRamp tree checksum changes, so a launcher that already installed the original detects the
+   difference and re-applies the tree on `upgrade`.
+
+   ```bash
+   ./aether-ops-bootstrap inspect --bundle bundle-site-a.tar.zst
+   ```
+
+</Steps>
+
+<Aside type="note">
+`--keep-workdir` leaves the extraction directory in place for inspection when a patch does not do
+what you expected.
+</Aside>
 
 ## Verify
 
-TODO
-
-## Next
-
-TODO
+The new bundle's *Integrity* section in `inspect` reads *not recorded — likely patched after build*,
+which is expected: the archive checksum no longer matches the one the original build recorded.
+Generate a new `.sha256` sidecar for it with `sha256sum`.

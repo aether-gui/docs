@@ -1,24 +1,57 @@
 ---
 title: "Verify a bundle"
-description: "Checksums, manifest inspection, and end-to-end test suites."
+description: "Checksums, manifest inspection, and the end-to-end test suites that exercise a bundle."
+products: [aether-ops-bootstrap]
 ---
 
-## What you'll do
+import { Steps } from '@astrojs/starlight/components';
 
-TODO
+Three levels of confidence, from seconds to an hour.
 
-## Prerequisites
+<Steps>
 
-- TODO
+1. **Checksum.** Every bundle ships with a `.sha256` sidecar, and the launcher's release archive
+   with a `checksums.txt`.
 
-## Steps
+   ```bash
+   sha256sum -c bundle.tar.zst.sha256
+   ```
 
-TODO
+2. **Manifest.** `inspect` lists what the bundle claims to contain and whether the archive
+   checksum matches the manifest's claim. The manifest also records a checksum for every file
+   inside the bundle, and the launcher verifies those as it installs.
 
-## Verify
+   ```bash
+   aether-ops-bootstrap inspect --bundle bundle.tar.zst
+   ```
 
-TODO
+3. **Dry-run on a real host.** `check` unpacks the bundle, validates the manifest schema, runs the
+   preflight checks, and prints the install plan. It is the quickest way to prove a bundle is
+   readable and matches the host's Ubuntu release.
 
-## Next
+   ```bash
+   sudo aether-ops-bootstrap check --bundle bundle.tar.zst
+   ```
 
-TODO
+4. **End-to-end.** The repository's `tests/` directory holds four suites driven by the DART test
+   runner over LXD virtual machines. Each builds the artifacts, waits for the VM, turns off its
+   NAT so the install is genuinely offline, pushes the files, runs the bootstrap, and asserts on
+   the result.
+
+   ```bash
+   make test-e2e-bootstrap        # single node: bootstrap, then check airgap, RKE2, aether-ops, OnRamp, images
+   make test-e2e-multi-bootstrap  # mgmt, core, and ran roles on three VMs
+   make test-e2e-deploy           # single node, then register it and deploy the 5G core and srsRAN through the API
+   make test-e2e-multi-deploy
+   make test-e2e                  # all of the above
+   ```
+
+   These need the DART CLI and an LXD host with a `default` storage pool. The bootstrap suite takes
+   ten to fifteen minutes; the deploy suites considerably longer.
+
+</Steps>
+
+## What is not verified
+
+Bundles and launchers are not signed. Integrity rests on the SHA-256 sidecars, so fetch those from
+a channel you trust as much as the bundle itself. Signing is on the project's roadmap.

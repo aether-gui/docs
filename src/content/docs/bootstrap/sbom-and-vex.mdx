@@ -1,6 +1,52 @@
 ---
 title: "SBOM and VEX"
-description: "Software bills of materials and vulnerability exploitability statements for releases."
+description: "Software bills of materials and vulnerability exploitability statements for bootstrap releases."
+products: [aether-ops-bootstrap, aether-ops-iso]
 ---
 
-TODO
+## What is produced
+
+Every bootstrap release built by the distribution workflow carries:
+
+| Artifact | Tool | Covers |
+|---|---|---|
+| `sbom-bootstrap.spdx.json` | Syft | The launcher binary. |
+| `sbom-bundle.spdx.json` | Syft | The whole bundle archive. |
+| `image-sboms.tar.gz` | Syft | One SBOM per container image inside the bundle. |
+| `image-grypes.tar.gz`, Grype scan output | Grype | Vulnerability scans of each SBOM, with VEX suppressions applied. |
+
+The ISO repository adds three tiers on top of a built image with `just sbom-tier1`, `sbom-tier2`,
+and `sbom-tier3` (launcher; plus bundle; plus every Ubuntu package on the ISO), written as SPDX
+JSON to `work/sbom/`.
+
+All of this is generated in CI. There is no Makefile target for it in the bootstrap repository;
+run Syft and Grype by hand to reproduce:
+
+```bash
+syft dist/bundle.tar.zst -o spdx-json=sbom-bundle.spdx.json
+grype sbom:sbom-bundle.spdx.json --vex security/vex/openvex.json -o table
+```
+
+## VEX
+
+`security/vex/openvex.json` is the project's OpenVEX 0.2.0 document. It is passed to Grype in
+every workflow so that vulnerabilities the project has assessed as *not affected* or *fixed* drop
+out of the scan tables while staying in the SBOMs for independent audit.
+
+Statements are authored with `vexctl`:
+
+```bash
+vexctl create \
+  --product "pkg:generic/aether-ops-bootstrap" \
+  --vuln "CVE-2025-12345" \
+  --status not_affected \
+  --justification vulnerable_code_not_in_execute_path \
+  --file security/vex/openvex.json
+```
+
+`pkg:generic/aether-ops-bootstrap` is the launcher, `pkg:generic/aether-ops-bundle` the bundle;
+match the `artifact.purl` Grype reports. Bump the document's `version` and refresh its
+`timestamp` on every change.
+
+At the time of writing the document's `statements` list is empty: the pipeline is wired end to end,
+but no CVE has been assessed yet.

@@ -1,6 +1,52 @@
 ---
 title: "Nodes, roles, and deployments"
-description: "The domain model behind the web UI."
+description: "The domain model behind the web UI: sites, deployments, nodes, roles, and where the truth lives."
+products: [aether-ops]
 ---
 
-TODO
+## Site and deployment
+
+`aether-ops` 0.5.2 creates one site (`site-default`) and one deployment (`dep-default`, shown as
+*Default Deployment*) on first start. Every API path under `/api/v1/deployments/{id}/…` and every
+dashboard page is scoped to a deployment; the header's deployment selector has one entry today.
+Multi-deployment support is planned, which is why the scoping is already there.
+
+## Nodes
+
+A node is a machine the daemon can reach over SSH as the `aether` user. The record holds its
+name (also the Ansible inventory hostname), the address the daemon connects to, an optional
+routable address that other nodes and pods use to reach services on it, the credential method,
+its roles, and the state of the agent the daemon installs on it.
+
+The management host registers itself as the local node with address `127.0.0.1` and its routable
+address filled in from the interface with the default route.
+
+Node passwords, when used, are encrypted at rest with `AETHER_ENCRYPTION_KEY`.
+
+## Roles
+
+A role names an Ansible inventory group and the components that group installs. OnRamp roles
+come from the OnRamp checkout's catalog (`master`, `gnbsim`, `srsran`, and the rest). Extension
+roles come from the daemon's own catalog and are hidden behind feature gates. `GET /api/v1/roles`
+returns both merged, each entry saying which `source` it came from and, for `master`, `max_nodes: 1`.
+
+Assigning a role writes it to the node record and regenerates the OnRamp inventory so the right
+hosts land in the right groups.
+
+## Components, actions, tasks, apply runs
+
+A component is a deployable unit OnRamp knows (`k8s`, `5gc`, `gnbsim`, …) with a group, an install
+tier, and a list of actions (`install`, `uninstall`, `reset`, `run`, …). Running an action creates
+a task: one `ansible-playbook` or `make` invocation whose output streams into the task record.
+The wizard's Deploy step and Bulk Deploy submit several actions as one apply run, executed in tier
+order, one task at a time.
+
+`GET /api/v1/onramp/state` lists every component with `installed`, `not_installed`, or a failure
+state, and the id of the action that last touched it.
+
+## Source of truth
+
+The daemon's database is the source of truth for nodes, roles, and deployment membership; the
+OnRamp inventory and variables files are generated from it, not edited by hand. The other way
+round, the running core is the source of truth for subscribers, device groups, and slices: the UI
+reads and writes them through the core's own web console API and does not keep a copy.

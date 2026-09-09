@@ -1,6 +1,88 @@
 ---
 title: "How the bootstrap works"
-description: "The offline installer: a launcher binary plus a bundle of everything it needs."
+description: "The offline installer: a launcher binary plus a bundle of everything it needs, and what it puts on a host."
+products: [aether-ops-bootstrap]
 ---
 
-TODO
+import { FileTree } from '@astrojs/starlight/components';
+
+`aether-ops-bootstrap` turns a plain Ubuntu Server host into a running Aether Ops management plane
+with no internet access. It is what the ISO runs on first boot, and it can be run by hand on any
+host that already has Ubuntu.
+
+## Two files
+
+| File | What it is |
+|---|---|
+| `aether-ops-bootstrap` | The launcher: one static Go binary with the subcommands listed in the [reference](/docs/reference/aether-ops-bootstrap-cli/). |
+| `bundle.tar.zst` | The bundle: about 3.7 GB holding every package, container image, and binary the install needs. A `.sha256` sidecar travels with it. |
+
+The launcher is generic; the bundle is what pins versions. `inspect` prints what a bundle contains:
+
+```text title="aether-ops-bootstrap inspect --bundle bundle.tar.zst (excerpt)"
+Bundle:   bundle.tar.zst
+Version:  2026.08.05.1
+Built:    2026-08-05T17:47:06Z by build-bundle (go1.26.3, git 2f8f351)
+
+Components
+  RKE2                            v1.35.3+rke2r3  variants: canal,multus; image_mode: core+variant
+  Helm                            v3.21.0
+  aether-ops                      v0.4.5          source: local  path: ./artifacts/aether-ops_0.4.5_linux_amd64.tar.gz
+  onramp                          ref: v2.3.0     sha: 65ffa873c24f  tree: 6dd1a7651f2a
+  helm-charts/sdcore-helm-charts  ref: v4.0.0     sha: 4ca69630cf7b  tree: aa762260adab
+```
+
+## What is inside a bundle
+
+<FileTree>
+- bundle.tar.zst
+  - manifest.json versions, checksums, and provenance of everything below
+  - apt-repo/ a self-contained apt repository with the packages and their dependencies
+  - rke2/ RKE2 install tarballs and airgap image archives
+  - helm/helm
+  - aether-ops/ the daemon binary and its systemd unit
+  - onramp/aether-onramp/ the OnRamp checkout, with airgap patches already applied
+  - helm-charts/sdcore-helm-charts/
+  - images/ container images as tar archives, one per image
+  - wheelhouse/ Python wheels
+  - templates/ sysctl, sudoers, sshd, udev, and RKE2 configuration templates
+</FileTree>
+
+## What an install does
+
+The launcher unpacks the bundle to a temporary directory, reads the manifest, and walks its
+components in a fixed order. Each component compares what is on the host with what the bundle
+wants and applies only the difference, so `install`, `upgrade`, and `repair` share one engine.
+
+| Order | Component | What it does on the host |
+|---|---|---|
+| 1 | `debs` | Stages the apt repository under `/var/lib/aether-ops/apt-repo`, points apt at it, installs the packages (Ansible, git, make, Docker, and others). |
+| 2 | `ssh` | Allows password login for the OnRamp user only. |
+| 3 | `sudoers` | Passwordless sudo for the OnRamp user. |
+| 4 | `service_account` | Creates the `aether-ops` system account and the `aether` OnRamp user. |
+| 5 | `udev` | Installs udev rules for RAN hardware. |
+| 6 | `wheelhouse` | Python wheels for the Ansible collections. |
+| 7 | `rke2` | Writes the RKE2 configuration, applies sysctl tuning, extracts RKE2, stages the airgap images, starts `rke2-server`, waits for the node to be ready, links `kubectl`. |
+| 8 | `dockerimages` | Loads the simulator and RAN images into Docker. |
+| 9 | `helm` | Installs Helm. |
+| 10 | `onramp` | Installs the OnRamp checkout and the SD-Core charts, stamps credentials into `hosts.ini`. |
+| 11 | `aether_ops` | Writes the OnRamp password file, installs the daemon and its unit, starts it, waits for `/healthz`. |
+
+On the lab machine the whole run took just under ten minutes: about a minute and a half for
+packages, five minutes for RKE2 to come up, three for loading images, and seconds for the rest.
+
+The result is recorded in `/var/lib/aether-ops-bootstrap/state.json`, and every run appends to
+its `history`. That file is what later `upgrade` and `repair` runs compare against.
+
+## Roles
+
+With no `--roles` flag every component above is installed on the one host: a complete
+single-machine management plane and master node. Roles restrict the set for multi-machine layouts:
+`mgmt` skips RKE2 and Helm, `core` skips the daemon and OnRamp, `ran` installs only the host
+preparation. The web UI does not yet drive multi-node bootstraps; see the
+[reference](/docs/reference/aether-ops-bootstrap-cli/) for the role table.
+
+## Where to go next
+
+- [Install a node](/docs/bootstrap/install/) is the hands-on walk-through.
+- [Bundle and manifest](/docs/concepts/bundle-and-manifest/) goes deeper into the manifest.

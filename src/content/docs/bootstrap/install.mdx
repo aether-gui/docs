@@ -1,24 +1,135 @@
 ---
 title: "Install a node with the bootstrap"
-description: "Run aether-ops-bootstrap on an existing Ubuntu host."
+description: "Run aether-ops-bootstrap on an existing Ubuntu host: verify, dry-run, install, and check the result."
+products: [aether-ops-bootstrap]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Take a fresh Ubuntu Server host with no internet access from nothing to a running `aether-ops`
+with Kubernetes underneath. About 15 minutes, ten of them waiting for the install.
 
 ## Prerequisites
 
-- TODO
+- Ubuntu Server 22.04 or 24.04 on x86-64 with systemd, at least 10 GB free on `/` (the launcher
+  refuses to start with less), and realistically the sizes in [What you need](/docs/overview/what-you-need/).
+- Root or sudo on the host.
+- The three files, copied in by whatever means you have: `aether-ops-bootstrap`, `bundle.tar.zst`,
+  and `bundle.tar.zst.sha256`.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Verify the bundle.** Corruption in transit is the cheapest problem to catch here.
+
+   ```bash
+   sha256sum -c bundle.tar.zst.sha256
+   chmod +x aether-ops-bootstrap
+   ./aether-ops-bootstrap version
+   ```
+
+   ```text title="Expected output"
+   bundle.tar.zst: OK
+   aether-ops-bootstrap v0.4.0
+   ```
+
+2. **Look inside** if you want to know what is about to be installed:
+
+   ```bash
+   ./aether-ops-bootstrap inspect --bundle bundle.tar.zst
+   ```
+
+3. **Dry-run.** `check` runs the preflight checks, unpacks the bundle, and prints the plan without
+   changing anything. On a fresh host it took 13 seconds.
+
+   ```bash
+   sudo ./aether-ops-bootstrap check --bundle bundle.tar.zst
+   ```
+
+   ```text title="Expected output (trimmed)"
+   running preflight checks...
+   extracting bundle bundle.tar.zst...
+   bundle version 2026.08.05.1 (schema 2)
+   detected host suite: noble
+   [debs] would apply ( → 2026.08.05.1, 4 actions)
+     - stage apt-repo to /var/lib/aether-ops/apt-repo
+     - write /etc/apt/sources.list.d/aether-bundle.list (suite=noble)
+     - apt-get update against bundle
+     - apt-get install 25 top-level packages
+   [ssh] would apply ( → 2026.08.05.1, 1 actions)
+   ...
+   [rke2] would apply ( → v1.35.3+rke2r3, 10 actions)
+   ...
+   [aether_ops] would apply ( → v0.4.5, 6 actions)
+     - stop aether-ops if running
+     - create config and state directories
+     - write onramp password file
+     - install aether-ops v0.4.5
+     - enable and start aether-ops
+     - wait for aether-ops health
+   ```
+
+4. **Choose the OnRamp password.** The install creates the `aether` OS user that Ansible logs in
+   as. Give it a password you know rather than letting one be generated:
+
+   ```bash
+   export AETHER_ONRAMP_PASSWORD='choose-something'
+   ```
+
+   Without this, a random 24-character password is generated, printed once, and kept in the
+   install log. The order of precedence is on the [reference page](/docs/reference/aether-ops-bootstrap-cli/).
+
+5. **Install.**
+
+   ```bash
+   sudo -E ./aether-ops-bootstrap install --bundle bundle.tar.zst
+   ```
+
+   Add `-v` to watch package installs scroll by. The log lines look like the dry-run's, with
+   *applying* instead of *would apply*, and end with:
+
+   ```text title="End of the install output"
+   ========================================
+     Bootstrap complete!
+   ========================================
+
+     aether-ops is running at http://127.0.0.1:8186
+
+     Onramp user: aether
+     Onramp password: <set via env>
+   ```
+
+6. **Keep the artifacts.** `upgrade` and `repair` need the launcher and a bundle later.
+
+   ```bash
+   sudo mkdir -p /opt/aether/bootstrap
+   sudo mv aether-ops-bootstrap bundle.tar.zst bundle.tar.zst.sha256 /opt/aether/bootstrap/
+   ```
+
+</Steps>
+
+<Aside type="caution" title="Already installed?">
+`install` refuses to run over a host whose state file records a successful install. Use `upgrade`
+for a newer bundle, `repair` to re-apply the same one, or `install --force` to start over.
+</Aside>
 
 ## Verify
 
-TODO
+```bash
+sudo ./aether-ops-bootstrap state | head -20
+systemctl is-active rke2-server aether-ops
+sudo /var/lib/rancher/rke2/bin/kubectl --kubeconfig /etc/rancher/rke2/rke2.yaml get nodes
+curl http://localhost:8186/healthz
+```
+
+The state file lists each component with the version installed and a timestamp; the node reports
+*Ready*; the health check answers `{"status":"healthy",...}` with the bundled version of the daemon.
+
+Then make the UI reachable: [Open the web UI](/docs/iso/open-the-web-ui/).
 
 ## Next
 
-TODO
+[Upgrade and repair](/docs/bootstrap/upgrade-repair/) for the day the next bundle arrives.

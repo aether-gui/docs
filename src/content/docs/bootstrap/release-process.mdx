@@ -1,6 +1,59 @@
 ---
 title: "Release process"
-description: "How bundles and launchers are published."
+description: "How bootstrap bundles and launchers are built, scanned, and published, and which workflow does what."
+products: [aether-ops-bootstrap]
 ---
 
-TODO
+Two workflows in `aether-ops-bootstrap/.github/workflows/` publish things, and they trigger on
+different tag shapes.
+
+## Launcher releases: `release.yaml`
+
+Trigger: a semantic-version tag such as `v0.4.0`, or a manual run. It runs GoReleaser and nothing
+else: a `linux/amd64` build of `aether-ops-bootstrap`, a `.tar.gz` archive with the README and
+licence, `checksums.txt`, and a GitHub release. No bundle, no SBOM, no scan.
+
+```bash
+git tag v0.4.1 && git push --tags
+```
+
+## Bundle releases: `distribute.yml`
+
+Trigger: a calendar-version tag such as `v2026.08.05.1`, or a manual run. This is the real release
+pipeline, and it runs on the project's self-hosted runner because the bundle is far larger than a
+GitHub release asset may be. In order:
+
+1. Resolve the target bundle version from the tag and pin it in `specs/bundle.yaml`.
+2. Build the four CLI tools.
+3. Build the bundle.
+4. Install Syft and Grype; generate the launcher and bundle SBOMs; scan them with the VEX document
+   applied; produce per-image SBOMs and scans.
+5. Rotate `site/releases.yaml`, render the download site, and publish launcher, bundle, sidecars,
+   SBOMs, and scans to the distribution web root, verifying every `.sha256` after copying.
+6. Prune retired release directories.
+7. Commit the spec change and open a pull request against `dev` with release-notes placeholders
+   to fill in.
+
+```bash
+git tag v2026.09.10.1 && git push --tags
+```
+
+The published result is the distribution site the ISO's `just fetch-bootstrap` reads:
+`https://tools.jointpathfinding.com/aether-ops-bootstrap/`, with a `metadata.json` naming the
+current release.
+
+## Re-rendering the site
+
+`republish-site.yml` re-renders the download page from `site/releases.yaml` without building
+anything, for fixing a description or a link.
+
+## Version numbers
+
+| Thing | Scheme | Example |
+|---|---|---|
+| Launcher | semantic version | `v0.4.0` |
+| Bundle | calendar version, `YYYY.MM.DD.N` | `2026.08.05.1` |
+| Manifest schema | integer, `schema_version` in the manifest | `2` |
+
+A launcher reads only bundles whose manifest schema it knows; a mismatch is an error rather than a
+guess.

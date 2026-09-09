@@ -1,24 +1,81 @@
 ---
 title: "Inspect and diagnose"
-description: "Look inside a bundle, read the state file, and collect diagnostics."
+description: "Look inside a bundle, read the state file, and collect a diagnostic tarball for support."
+products: [aether-ops-bootstrap]
 ---
 
-## What you'll do
+import { FileTree } from '@astrojs/starlight/components';
 
-TODO
+## inspect
 
-## Prerequisites
+`inspect` reads the manifest straight out of a bundle without unpacking it. It prints the bundle
+version, when and how it was built, an integrity section, every component with its version and
+source, and the patches applied to the OnRamp tree.
 
-- TODO
+```bash
+aether-ops-bootstrap inspect --bundle bundle.tar.zst
+aether-ops-bootstrap inspect --bundle bundle.tar.zst --json | jq .components.rke2
+```
 
-## Steps
+It needs no root and makes no changes, so it is safe to run anywhere, including on your
+workstation. The *Integrity* section compares the archive checksum with the value the manifest
+claims; a bundle modified after its build (with the patch tool, for example) shows *not recorded —
+likely patched after build*.
 
-TODO
+The `--json` form has `schema_version`, `bundle_version`, `bundle_sha256`, `build_info`, and
+`components` with entries for `debs`, `apt_repo`, `rke2`, `helm`, `aether_ops`, `onramp`,
+`helm_charts`, `images`, and `templates`.
 
-## Verify
+## state
 
-TODO
+```bash
+sudo aether-ops-bootstrap state
+```
 
-## Next
+Prints `/var/lib/aether-ops-bootstrap/state.json`: the launcher and bundle versions, one entry per
+installed component with its version and `installed_at`, and a `history` of every run (`install`,
+`check`, `upgrade`, `repair`) with timestamps. A `check` run adds a history entry but no components.
 
-TODO
+## The install log
+
+`/var/lib/aether-ops-bootstrap/bootstrap.log` (mode 0600) holds the full output of every run,
+including the generated OnRamp password when one was generated. Read it with `sudo`.
+
+## diagnose
+
+```bash
+sudo aether-ops-bootstrap diagnose
+```
+
+```text title="Expected output"
+diagnostic bundle saved to /tmp/aether-bootstrap-diag-20260909T201317.tar.gz
+```
+
+The launcher also produces one of these by itself whenever a run fails, and prints the path. The
+tarball is small (a few kilobytes plus the logs) and contains:
+
+<FileTree>
+- aether-bootstrap-diag-….tar.gz
+  - diag-meta.json
+  - state/
+    - state.json
+    - bootstrap.log
+  - services/
+    - aether-ops-status.txt
+    - aether-ops-journal.txt
+    - rke2-server-status.txt
+    - rke2-server-journal.txt
+  - system/
+    - os-release
+    - uname.txt
+    - hostname.txt
+    - cpu.txt
+    - nproc.txt
+    - memory.txt
+    - disk.txt
+    - network.txt
+    - datetime.txt
+</FileTree>
+
+Attach it when asking for help. It contains the install log, so it may contain a generated
+password; the file is created with mode 0600.

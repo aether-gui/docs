@@ -1,24 +1,102 @@
 ---
 title: "Build a bundle"
-description: "Produce a bundle from a bundle.yaml spec."
+description: "Produce a bundle from the bundle.yaml spec with the build-bundle tool."
+products: [aether-ops-bootstrap]
 ---
+
+import { Steps, Aside, FileTree } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Build `bundle.tar.zst` from the declarative spec in the bootstrap repository. The build downloads
+several gigabytes of packages and container images, so it needs a networked build host; plan for
+half an hour the first time.
 
 ## Prerequisites
 
-- TODO
+- A clone of `aether-gui/aether-ops-bootstrap` on a Linux host with Go (the workflows pin Go 1.26),
+  `make`, and network access to Ubuntu's mirrors, GitHub, and the Helm and container registries.
+- About 20 GB of free disk.
+
+## The spec
+
+`specs/bundle.yaml` is the whole definition of a bundle. Its top-level sections:
+
+| Section | Pins |
+|---|---|
+| `bundle_version` | The calendar version stamped into the manifest, for example `2026.08.05.1`. |
+| `ubuntu` | Suites and architectures to resolve packages for (`noble`, `noble-updates`, `noble-security`; `amd64`). |
+| `debs` | Top-level packages to vendor; transitive dependencies are resolved by the builder. |
+| `rke2` | RKE2 version, CNI variants (`canal`, `multus`), and image mode. |
+| `helm` | Helm version. |
+| `aether_ops` | Which daemon to ship: a release version, a local archive, or a git ref to build from source; plus the OnRamp user name and, optionally, its password source. |
+| `onramp` | OnRamp repository and ref, and patches to apply for offline use. |
+| `helm_charts` | The SD-Core chart repository and ref. |
+| `images` | Container images: extracted automatically from the charts, plus `extra` and `exclude` lists. |
+
+`specs/bundle.lock.json` records the exact package versions and image digests the last build
+resolved; commit it with the spec so a rebuild is reproducible.
+
+<Aside type="caution">
+Do not put an OnRamp password in a tracked spec. The install-time sources
+(`--onramp-password`, `AETHER_ONRAMP_PASSWORD`) exist so the spec never has to carry one.
+</Aside>
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Edit the spec.** Bump `bundle_version`, change the pins you need.
+
+2. **Build.**
+
+   ```bash
+   make bundle
+   ```
+
+   which is:
+
+   ```text
+   CGO_ENABLED=0 GOOS=linux GOARCH=amd64 go build -trimpath -o dist/build-bundle ./cmd/build-bundle
+   ./dist/build-bundle --spec specs/bundle.yaml --output dist/bundle.tar.zst
+   ```
+
+   The builder fetches and verifies RKE2 and Helm, obtains the daemon, clones OnRamp at the pinned
+   ref and applies the offline patches, scans OnRamp for apt and pip requirements and fails on any
+   it cannot vendor, resolves and downloads the package closure into an apt repository, builds
+   the wheelhouse, clones the charts, extracts image references from them, pulls every image, and
+   writes the manifest and the compressed archive.
+
+3. **Package** the launcher, bundle, and sidecar together for hand-off:
+
+   ```bash
+   make package
+   ```
+
+</Steps>
+
+## What you get
+
+<FileTree>
+- dist/
+  - build-bundle
+  - bundle.tar.zst
+  - bundle.tar.zst.sha256
+  - aether-ops-bootstrap-…tar.gz from `make package`
+- specs/
+  - bundle.yaml
+  - bundle.lock.json rewritten by the build
+</FileTree>
+
+`build-bundle` takes only two flags: `--spec` (a file, or a directory of spec files to build several
+bundles) and `--output` (a file, or a directory in multi-spec mode).
 
 ## Verify
 
-TODO
+[Verify a bundle](/docs/bootstrap/verify-a-bundle/): checksum, `inspect`, and a `check` dry-run on a
+host.
 
 ## Next
 
-TODO
+[Patch a bundle](/docs/bootstrap/patch-a-bundle/) changes files without a rebuild;
+[Release process](/docs/bootstrap/release-process/) is how bundles reach the distribution site.

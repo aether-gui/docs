@@ -1,6 +1,45 @@
 ---
 title: "MCP server"
 description: "Drive aether-ops from an LLM client over the Model Context Protocol."
+products: [aether-ops]
+status: beta
+sidebar:
+  badge:
+    text: Beta
+    variant: caution
 ---
 
-TODO
+The daemon can expose its API as MCP tools, so an LLM client that speaks the Model Context
+Protocol can list nodes, read status, and start actions.
+
+## Turning it on
+
+| Flag | Env | Effect |
+|---|---|---|
+| `--mcp` | `AETHER_MCP=true` | Serve MCP over stdio. Useful when a client launches the daemon as a subprocess. |
+| `--mcp-listen <addr>` | `AETHER_MCP_LISTEN` | Serve MCP over the StreamableHTTP transport on this address, alongside the normal API. |
+
+For a service that is already running, `--mcp-listen` is the practical one:
+
+```bash title="/etc/aether-ops/env"
+AETHER_MCP_LISTEN=127.0.0.1:8190
+```
+
+Restart the service and point the client at `http://127.0.0.1:8190`. Keep it on loopback or behind
+the API token; the tools can change the system.
+
+## Tools
+
+The names below are the tool names registered by the daemon in version 0.5.2.
+
+| Area | Tools |
+|---|---|
+| Server and host | `server_status`, `system_overview`, `system_network`, `system_metrics` |
+| Nodes | `nodes_list`, `nodes_get`, `nodes_create`, `nodes_update`, `nodes_delete` |
+| Components | `components_list`, `component_get`, `component_states_list`, `component_state_get` |
+| Actions and tasks | `actions_list`, `action_get`, `deploy_action`, `tasks_list`, `task_get`, `task_cancel` |
+| Configuration | `config_get`, `config_patch`, `profiles_list` |
+| OnRamp checkout | `repo_status`, `repo_refresh` |
+
+Each tool maps onto the REST endpoint of the same name; the [API reference](/docs/reference/api/)
+describes the payloads.

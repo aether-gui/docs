@@ -4,4 +4,14 @@ description: "Material for people building, packaging, or operating Aether Ops b
 tableOfContents: false
 ---
 
-TODO
+import { CardGrid, LinkCard } from '@astrojs/starlight/components';
+
+Nothing in this section is needed to install from the ISO and use the web UI. It is here for the
+people who build the images, run without internet access, or want to know how the pieces fit.
+
+<CardGrid>
+  <LinkCard title="Bootstrap installer" href="/docs/bootstrap/" description="Install on an existing Ubuntu host with no internet, upgrade, repair, inspect, and build bundles." />
+  <LinkCard title="Building the ISO" href="/docs/iso/build/" description="Produce the bootable image, test it in a container, and understand what it does." />
+  <LinkCard title="Running aether-ops" href="/docs/running/other-ways-to-run/" description="The install script, configuration, and the MCP server." />
+  <LinkCard title="Concepts" href="/docs/concepts/architecture/" description="Architecture, the domain model, and the bundle format." />
+</CardGrid>
