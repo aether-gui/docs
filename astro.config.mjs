@@ -15,7 +15,8 @@ export default defineConfig({
     starlight({
       title: 'Aether Ops',
       description: 'Install, deploy, and operate a private 5G network with Aether Ops.',
-      logo: { src: './src/assets/logo.svg', alt: 'Aether Ops' },
+      // The logo carries the wordmark, so the text title is suppressed.
+      logo: { src: './src/assets/logo.svg', alt: 'Aether Ops', replacesTitle: true },
       favicon: '/favicon.svg',
       social: [
         { icon: 'github', label: 'GitHub', href: 'https://github.com/aether-gui' },
