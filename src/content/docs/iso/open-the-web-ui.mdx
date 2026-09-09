@@ -1,24 +1,94 @@
 ---
 title: "Open the web UI"
 description: "Make aether-ops reachable from your workstation and open the web UI for the first time."
+products: [aether-ops-iso, aether-ops]
 ---
+
+import { Steps, Aside, Tabs, TabItem } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Point `aether-ops` at a network interface so a browser on your workstation can reach it, then open
+the web UI. Two minutes.
+
+Out of the box the service listens only on `127.0.0.1`, the machine's own loopback address. That
+is safe but useless when the server sits in a rack and you sit at a desk, so the first thing to do
+is change the listening address.
 
 ## Prerequisites
 
-- TODO
+- A machine where `aether-ops` is running, from [First boot](/docs/iso/first-boot/) or the
+  [install script](/docs/running/other-ways-to-run/).
+- A login on that machine. On an ISO-installed host that is user `aether`, password `aether`.
+- Its IP address. `hostname -I` prints it; the first address is usually the one you want.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Log in** on the machine's console or over SSH:
+
+   ```bash
+   ssh aether@<address>
+   ```
+
+2. **Write the listening address** into the service's environment file. Use `0.0.0.0` to listen on
+   every interface, or one interface's own address to limit it to that network.
+
+   <Tabs syncKey="bind">
+     <TabItem label="Every interface">
+       ```bash
+       echo 'AETHER_LISTEN=0.0.0.0:8186' | sudo tee /etc/aether-ops/env
+       ```
+     </TabItem>
+     <TabItem label="One interface">
+       ```bash
+       echo 'AETHER_LISTEN=192.0.2.10:8186' | sudo tee /etc/aether-ops/env
+       ```
+       Replace `192.0.2.10` with the address of the interface your workstation reaches.
+     </TabItem>
+   </Tabs>
+
+   On an ISO-installed host the file does not exist yet, and this creates it. On a host set up
+   with the install script the file exists with every line commented out; either append as above
+   or uncomment the `AETHER_LISTEN` line and edit it.
+
+3. **Restart the service** and confirm it is listening on the new address:
+
+   ```bash
+   sudo systemctl restart aether-ops
+   ss -ltn | grep 8186
+   ```
+
+   ```text title="Expected output"
+   LISTEN 0      4096               *:8186             *:*
+   ```
+
+4. **Open the UI.** On your workstation, browse to `http://<address>:8186`. The first visit lands on
+   the setup wizard.
+
+</Steps>
+
+<Aside type="caution" title="Anyone who can reach the port can manage the network">
+There is no login yet. On a shared network, also set `AETHER_API_TOKEN` in the same file before
+restarting; the UI will ask for it. See [Configuration](/docs/running/configuration/).
+</Aside>
 
 ## Verify
 
-TODO
+From your workstation:
+
+```bash
+curl http://<address>:8186/healthz
+```
+
+```text title="Expected output"
+{"status":"healthy","version":"0.5.2","uptime":"14s"}
+```
+
+The version is whatever the host installed; an ISO-installed host reports the version carried by
+its bundle.
 
 ## Next
 
-TODO
+[Take the tour](/docs/gui/tour/) of the web UI, then run the [setup wizard](/docs/gui/setup-wizard/).

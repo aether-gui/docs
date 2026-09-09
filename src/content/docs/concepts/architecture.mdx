@@ -1,6 +1,61 @@
 ---
 title: "Architecture"
-description: "The daemon, the node agent, OnRamp, and Kubernetes."
+description: "The daemon, the node agent, OnRamp, and Kubernetes, and how they fit together."
 ---
 
-TODO
+You do not need this page to use Aether Ops. It is here for when you want to know what is running
+where.
+
+## The layers
+
+```
+workstation ── browser ──▶ aether-ops (web UI + REST API, :8186)
+                               │
+                               ├─ SSH as user "aether" ──▶ every node
+                               │      └─ aether-ops-agent (:8187, mTLS) reports facts and health
+                               │
+                               └─ runs Aether OnRamp (Ansible) ──▶ installs components on nodes
+                                                                       ├─ k8s   RKE2 cluster
+                                                                       ├─ 5gc   SD-Core on that cluster
+                                                                       └─ gnbsim, srsran, oai, … RAN and simulators
+```
+
+**`aether-ops`** is one Go binary. It serves the web UI (built from `aether-ops-web` and embedded at
+build time) and a REST API, keeps its state in a SQLite database under `/var/lib/aether-ops`, and
+runs as a systemd service. It never installs anything itself; it prepares configuration and drives
+OnRamp.
+
+**Aether OnRamp** is the Ansible toolchain from the Aether project. The daemon clones it into its
+data directory, writes the inventory (`hosts.ini`) and variables (`vars/main.yml`) from what you set
+in the UI, and runs its `make` targets. Every *component* you see in the UI is one OnRamp target,
+and every *task* is one run of it.
+
+**Nodes** are machines the daemon can reach over SSH as the `aether` user, with passwordless sudo.
+The management host registers itself as the local node. Each node gets a small agent installed by
+the daemon; the agent reports CPU, memory, disk, and reachability for the Status pages.
+
+**Roles** decide which components land on which node. `master` installs RKE2 and SD-Core and can be
+held by one node only. RAN and simulator roles (`gnbsim`, `srsran`, `oai`, `ocudu`, `ueransim`, and
+others) can go on any node. Extension roles come from outside OnRamp and are hidden behind feature
+gates.
+
+**Kubernetes (RKE2)** runs on the master. SD-Core is Helm charts on that cluster. Nothing else in
+Aether Ops runs in Kubernetes: the daemon, the agents, and the simulators are plain processes or
+containers on the hosts.
+
+## Two installers, one result
+
+The **install script** downloads a release from GitHub and needs internet access. The **bootstrap**
+carries everything in a bundle and needs none. The **ISO** wraps the bootstrap in an unattended
+Ubuntu install. All three end with `aether-ops` under systemd and, in the bootstrap's case, with RKE2
+already installed as well.
+
+## Data flow for a deployment
+
+1. The wizard's Nodes step writes nodes to the database and installs agents.
+2. Preflight runs checks over SSH and applies fixes.
+3. Roles are stored per node and per deployment.
+4. Config composes OnRamp variables from defaults derived from node facts.
+5. Deploy builds a plan (ordered component installs), submits it as an *apply run*, and the daemon
+   executes the runs one at a time, streaming Ansible output into tasks you can watch.
+6. The dashboard polls status endpoints that read Kubernetes, SD-Core, and the agents.

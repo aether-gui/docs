@@ -1,6 +1,107 @@
 ---
 title: "Other ways to run aether-ops"
-description: "Install script, systemd, Docker, and Kubernetes."
+description: "Install the daemon with the install script on an existing Ubuntu host, or run it under Docker or Kubernetes."
+products: [aether-ops]
 ---
 
-TODO
+import { Steps, Aside } from '@astrojs/starlight/components';
+
+The ISO is the path with the fewest decisions. When you already have an Ubuntu machine with internet
+access, the install script gets the same result in about a minute.
+
+## Install script on an existing Ubuntu host
+
+The script downloads the latest `aether-ops` release, installs it as a systemd service, and with
+`--preflight` also prepares the host to be a node: it installs `make` and `ansible`, creates the
+`aether` OS user with passwordless sudo, and generates the SSH key the daemon uses to reach nodes.
+
+<Aside type="note">
+The Aether Ops repositories are private at the time of writing. The script needs a GitHub token with
+read access to `aether-gui/aether-ops` in `GITHUB_TOKEN`.
+</Aside>
+
+<Steps>
+
+1. Export a GitHub token on the target machine.
+
+   ```bash
+   export GITHUB_TOKEN=github_pat_...
+   ```
+
+2. Download and run the installer with preflight. The `--yes` flag skips the confirmation of the
+   security-relevant changes listed below.
+
+   ```bash
+   curl -fsSL -H "Authorization: token $GITHUB_TOKEN" \
+     https://raw.githubusercontent.com/aether-gui/aether-ops/main/scripts/install.sh \
+     -o install.sh
+   sudo -E bash install.sh --preflight --yes
+   ```
+
+   Without `--yes` the script prints what it is about to do and waits for confirmation:
+
+   ```text title="What --preflight changes"
+   1. Enable SSH password authentication
+      (allows any user to log in with a password)
+   2. Create the 'aether' OS user with a generated password
+   3. Grant the 'aether' user passwordless sudo (NOPASSWD: ALL)
+   4. Write the onramp password to /etc/aether-ops/onramp-password
+   ```
+
+   In practice step 1 is skipped when key authentication is configured, which `--preflight` does.
+
+3. Read the summary. The run takes about a minute on a fresh host, most of it installing Ansible.
+   The generated password for the `aether` user is printed once and saved root-readable in
+   `/etc/aether-ops/onramp-password`.
+
+   ```text title="End of the installer output"
+   Binary:     /usr/local/bin/aether-ops
+   Service:    /etc/systemd/system/aether-ops.service
+   Config:     /etc/aether-ops/
+   Data:       /var/lib/aether-ops/
+   User:       aether-ops
+
+   Health check:
+     curl http://localhost:8186/healthz
+   ```
+
+4. Make the UI reachable from your workstation, as described in
+   [Open the web UI](/docs/iso/open-the-web-ui/): set `AETHER_LISTEN` in `/etc/aether-ops/env` and
+   restart the service.
+
+</Steps>
+
+### Script options
+
+| Option | Effect |
+|---|---|
+| `--preflight` | Prepare the host as a node before installing (packages, SSH key, `aether` user). |
+| `--preflight-only` | Only prepare the host; do not install the binary or service. |
+| `--yes` | Skip the confirmation prompt. |
+| `--no-ssh` | With `--preflight`, leave SSH configuration alone. |
+| `--no-user` | With `--preflight`, do not create the `aether` user. |
+| `--clean` | Remove a previous installation first, including data. |
+| `VERSION=v0.5.2` | Install a specific release instead of the latest. |
+| `REF=<git ref>` | Build from source at a branch, tag, or commit instead of downloading a release. |
+| `AETHER_ONRAMP_PASSWORD=...` | Use this password for the `aether` user instead of a generated one. |
+
+An uninstaller lives next to the installer: `scripts/uninstall.sh`, with `--purge` to remove data.
+
+## As a systemd service
+
+Both the ISO and the install script leave `aether-ops` running under systemd as user `aether-ops`.
+
+```bash
+systemctl status aether-ops
+journalctl -u aether-ops -f
+sudo systemctl restart aether-ops
+```
+
+The unit reads `/etc/aether-ops/env`; see [Configuration](/docs/running/configuration/).
+
+## Docker and Kubernetes
+
+The `aether-ops` repository ships a `deploy/docker/Dockerfile` and manifests under `deploy/k8s/`.
+They run the daemon and UI, but the daemon still needs SSH access to the hosts it manages and a
+place to keep `/var/lib/aether-ops`. Treat these as starting points for your own packaging rather
+than a supported path; the Guide assumes the systemd service.

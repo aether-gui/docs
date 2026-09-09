@@ -1,6 +1,88 @@
 ---
 title: "Configuration"
-description: "Flags, environment variables, feature gates, TLS, and the API token."
+description: "The environment file, feature gates, the API token, TLS, and where the daemon keeps its data."
+products: [aether-ops]
 ---
 
-TODO
+`aether-ops` has no configuration file of its own. It reads flags, and every flag has an environment
+variable twin. Under systemd those variables come from one file.
+
+## /etc/aether-ops/env
+
+The installer writes this file with every line commented out:
+
+```bash title="/etc/aether-ops/env as installed"
+# Aether Ops daemon configuration
+# Uncomment and set values to configure the service.
+# CLI flags override these values when both are set.
+#
+# AETHER_LISTEN=0.0.0.0:8186
+# AETHER_TLS=true
+# AETHER_API_TOKEN=
+# AETHER_ENCRYPTION_KEY=
+# AETHER_DATA_DIR=/var/lib/aether-ops
+# AETHER_METRICS_INTERVAL=10s
+# AETHER_METRICS_RETENTION=24h
+```
+
+Uncomment a line, set its value, and restart:
+
+```bash
+sudo systemctl restart aether-ops
+```
+
+Any variable from the [CLI reference](/docs/reference/aether-ops-cli/) can be added here, not only
+the ones the template lists.
+
+## Listening address
+
+`AETHER_LISTEN` defaults to `127.0.0.1:8186`, which only the machine itself can reach. Set it to
+`0.0.0.0:8186` or to one interface's address to use the UI from another machine. See
+[Open the web UI](/docs/iso/open-the-web-ui/).
+
+## API token
+
+With no token, anyone who can reach port 8186 can do anything the UI can. Set one before exposing
+the port beyond a private lab network:
+
+```bash title="/etc/aether-ops/env"
+AETHER_LISTEN=0.0.0.0:8186
+AETHER_API_TOKEN=change-me-to-something-long
+```
+
+The web UI asks for the token; API clients send it as `Authorization: Bearer <token>`.
+
+## TLS
+
+`AETHER_TLS=true` serves HTTPS with a self-signed certificate generated at start. Provide your own
+with `AETHER_TLS_CERT` and `AETHER_TLS_KEY`. `AETHER_MTLS_CA_CERT` additionally requires client
+certificates.
+
+## Feature gates
+
+Pre-release functionality is hidden behind gates. Gates are off by default. Turn one on in
+`/etc/aether-ops/features.yaml` and restart:
+
+```yaml title="/etc/aether-ops/features.yaml"
+features:
+  splunk-enterprise: true
+  otel-collector: true
+```
+
+The same can be done for one run with `--feature-gates splunk-enterprise=true,otel-collector=true`.
+`GET /api/v1/meta/features` lists what is enabled. The [Extension roles](/docs/gui/extension-roles/)
+page shows what these two gates unlock.
+
+## Data directory
+
+`/var/lib/aether-ops` holds the state database, the daemon's SSH key pair under `keys/`, and the
+OnRamp checkout under `aether-onramp/`. Back it up if you want to keep node definitions and
+deployment history across reinstalls; `AETHER_ENCRYPTION_KEY` must be preserved with it, because
+node passwords in the database are encrypted with that key. The key is generated on first start when
+not set, so pin it in the env file before you add nodes if you plan to move the data directory.
+
+## OnRamp checkout
+
+The daemon clones Aether OnRamp into the data directory on first start and pins it to
+`AETHER_ONRAMP_VERSION` (default `main`). `GET /api/v1/onramp/repo` shows the checked-out commit and
+`POST /api/v1/onramp/repo/refresh` updates it.

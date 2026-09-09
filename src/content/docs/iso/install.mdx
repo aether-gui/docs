@@ -1,24 +1,82 @@
 ---
 title: "Install the operating system"
 description: "Write the Aether Ops ISO to a USB stick, boot it, and let the unattended install run."
+products: [aether-ops-iso]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
+import { Image } from 'astro:assets';
+import grub from '../../../assets/screenshots/iso/install-01-grub.png';
+import installerLog from '../../../assets/screenshots/iso/install-02-installer-log.png';
 
 ## What you'll do
 
-TODO
+Boot a machine from the Aether Ops ISO and let it install Ubuntu Server 24.04 with everything
+Aether Ops needs. There are no questions to answer. Expect about 12 minutes on a server, then
+the machine powers itself off.
+
+<Aside type="caution" title="The target disk is erased">
+The installer takes the largest disk in the machine, wipes it, and installs there. Do this only on a
+machine whose disks hold nothing you need.
+</Aside>
 
 ## Prerequisites
 
-- TODO
+- The ISO file, `aether-ops-<version>-amd64.iso`, about 6.5 GB, and its `.sha256` file.
+  Today the ISO is produced by the ISO repository's release workflow; ask your Aether Ops contact
+  for the current image, or [build it yourself](/docs/iso/build/).
+- A USB stick of 8 GB or more, or a server with virtual media (iDRAC, iLO, or similar).
+- A target machine that meets [What you need](/docs/overview/what-you-need/), with a keyboard and
+  screen attached, or a remote console.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Check the download.** On the machine where you downloaded the ISO:
+
+   ```bash
+   sha256sum -c aether-ops-0.1.0-amd64.iso.sha256
+   ```
+
+   ```text title="Expected output"
+   aether-ops-0.1.0-amd64.iso: OK
+   ```
+
+2. **Write it to the USB stick.** Replace `/dev/sdX` with the stick's device, not a partition and
+   not your system disk.
+
+   ```bash
+   sudo dd if=aether-ops-0.1.0-amd64.iso of=/dev/sdX bs=4M status=progress oflag=sync
+   ```
+
+   With virtual media, attach the ISO file instead and skip this step.
+
+3. **Boot the target from the stick.** Use the boot menu key of your machine (often F11, F12, or
+   Esc) and pick the USB device. Both BIOS and UEFI boot are supported.
+
+4. **Let GRUB choose.** The first entry, *Aether Ops - Automated Install*, is selected and starts by
+   itself after ten seconds.
+
+   <Image src={grub} alt="GRUB menu with the Aether Ops - Automated Install entry highlighted" />
+
+5. **Wait.** The screen fills with installer log lines like the ones below. Nothing needs your
+   attention. The installer partitions the disk, copies the system, and stages the Aether Ops
+   bootstrap for the first boot.
+
+   <Image src={installerLog} alt="Scrolling installer log lines during the unattended install" />
+
+6. **Remove the stick when the machine powers off.** The install ends with a power-off rather than
+   a reboot, so the machine cannot boot back into the installer by mistake. Pull the USB stick, or
+   detach the virtual media, then power the machine on again.
+
+</Steps>
 
 ## Verify
 
-TODO
+Nothing to check yet. When the machine has powered itself off, the install succeeded. If it is still
+running after 30 minutes, or it rebooted back into GRUB, see [Troubleshooting](/docs/gui/troubleshooting/).
 
 ## Next
 
-TODO
+Power the machine on and continue with [First boot](/docs/iso/first-boot/).

@@ -3,4 +3,48 @@ title: "What you need"
 description: "Hardware, network, and the two ways to get Aether Ops onto a machine."
 ---
 
-TODO
+## A machine
+
+Aether Ops runs on x86-64 servers or virtual machines running Ubuntu Server 24.04. For a first
+network on one machine with a simulated radio, this is enough:
+
+| | Minimum used in these docs | Comfortable |
+|---|---|---|
+| CPU | 8 cores | 16 cores |
+| Memory | 16 GB | 32 GB |
+| Disk | 80 GB | 200 GB |
+
+The 5G core alone needs several gigabytes of container images and a Kubernetes cluster, so smaller
+machines work poorly. Real radios and multiple nodes need more; see the RAN pages for what each
+component expects.
+
+## A second machine (optional)
+
+Everything in the Guide works on a single machine. The [Adding nodes](/docs/gui/adding-nodes/)
+page uses a second, smaller machine (8 cores, 8 GB, 40 GB) to show how more hosts join a
+deployment. Any Ubuntu 24.04 host the management host can reach over SSH will do.
+
+## Network
+
+- The management host needs an address you can reach from your workstation. You will point a
+  browser at port 8186 on it.
+- Nodes must be reachable from the management host over SSH (port 22).
+- Installing from the ISO needs no internet access at all. Installing with the install script
+  downloads from GitHub and Ubuntu's package mirrors.
+
+## Two ways to get it
+
+| | Install from the ISO | Install script |
+|---|---|---|
+| Starts from | a blank machine | an existing Ubuntu 24.04 machine |
+| Internet needed | no | yes |
+| What you type | nothing during install; a short setup screen after | one command |
+| Version of Aether Ops | the one embedded in the ISO's bundle | the latest release, or any tag you name |
+| Covered in | [Install from the ISO](/docs/iso/install/) | [Other ways to run aether-ops](/docs/running/other-ways-to-run/) |
+
+Both end in the same place: `aether-ops` running as a service, and the web UI waiting on port 8186.
+
+## A workstation with a browser
+
+Any current browser. The web UI is a single-page app served by `aether-ops` itself, so there is
+nothing to install on your side.

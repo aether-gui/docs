@@ -3,4 +3,45 @@ title: "What is Aether Ops?"
 description: "Aether Ops in plain language: what it installs, what it manages, and the pieces it is made of."
 ---
 
-TODO
+Aether Ops turns one or more ordinary Linux servers into a private 5G network and gives you a web
+page to run it from.
+
+It installs and manages [Aether](https://aetherproject.org), an open-source 4G/5G platform: a
+Kubernetes cluster, the SD-Core 5G core, and a radio side that can be real base stations or
+simulators. You never run Ansible or `kubectl` yourself unless you want to.
+
+## What you get
+
+- **A web UI** on port 8186 of the machine you install it on. A five-step wizard gets you from an
+  empty machine to a running core; after that the dashboard shows health, subscribers, and live
+  devices, and lets you add machines and roles.
+- **A management service** (`aether-ops`) behind that UI. It keeps the list of machines, runs
+  readiness checks, drives the installers, and collects status.
+- **An installer for machines with no internet** (`aether-ops-bootstrap`), which carries every
+  package and container image it needs in one bundle.
+- **A bootable ISO** that installs Ubuntu and runs that bootstrap for you, so a blank server
+  becomes a working management host without typing anything.
+
+## The pieces, by name
+
+| Name | What it is |
+|---|---|
+| `aether-ops` | The management service and the web UI, in one binary. |
+| `aether-ops-web` | The source of the web UI. It is built into `aether-ops`, so you never install it separately. |
+| `aether-ops-bootstrap` | The offline installer: a launcher plus a bundle. |
+| `aether-ops-iso` | The bootable image that wraps the bootstrap in an unattended Ubuntu install. |
+
+## How a deployment looks
+
+One machine, the **management host**, runs `aether-ops`. It is also the first node of the
+deployment and usually the **master**, meaning it runs Kubernetes and the 5G core. Other machines
+can be added later as **nodes** with their own **roles**: a simulated radio for testing, a real
+gNB, and so on. The service reaches every node over SSH and installs a small agent on each so the
+dashboard can show their health.
+
+## Where to start
+
+- A blank server and a USB stick: [Install from the ISO](/docs/iso/install/).
+- A machine that already runs Ubuntu, with internet access: see
+  [Other ways to run aether-ops](/docs/running/other-ways-to-run/).
+- Aether Ops already running: [take the tour](/docs/gui/tour/).

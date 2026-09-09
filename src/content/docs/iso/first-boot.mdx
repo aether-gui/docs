@@ -1,24 +1,92 @@
 ---
 title: "First boot"
 description: "What happens on the first boot after the install, the setup screen, and logging in."
+products: [aether-ops-iso]
 ---
+
+import { Steps, Aside } from '@astrojs/starlight/components';
 
 ## What you'll do
 
-TODO
+Power the machine on, answer the short setup screen, and wait for the platform bootstrap that runs
+in the background. About 12 minutes, most of it waiting.
 
 ## Prerequisites
 
-- TODO
+- The [install](/docs/iso/install/) finished and the machine powered itself off.
+- The USB stick is removed, or the virtual media detached.
+
+## What happens
+
+Two things start on the first boot:
+
+- **The platform bootstrap.** A service unpacks the bundle staged by the installer and installs
+  Kubernetes (RKE2), Helm, the Aether container images, OnRamp, and `aether-ops`. It runs
+  unattended and takes about ten minutes. Nothing shows on screen while it runs.
+- **The setup screen.** About a minute after boot, a text dialog titled *Aether Node Setup* appears
+  on the console and asks for a hostname and network settings. You can answer it while the
+  bootstrap is still running.
 
 ## Steps
 
-TODO
+<Steps>
+
+1. **Power the machine on.** It boots from its disk into Ubuntu. The hostname is derived from the
+   first network card's MAC address, for example `aether-80fd87`, until you change it.
+
+2. **Answer the setup screen.** Use the arrow keys, Tab, and Enter.
+
+   - *Welcome* asks whether to continue. Choose **Yes**.
+   - *Hostname* offers the generated name; type a better one if you like.
+   - *Topology* asks whether one network card carries everything (**collapsed**) or the
+     management, N2, N3, and N6 networks have their own cards (**separated**). For a first
+     single-machine network choose collapsed.
+   - For each interface, choose **DHCP** or enter a static address.
+   - A summary confirms what was written.
+
+   The choices go to `/etc/netplan/90-aether.yaml` and are applied immediately. Run
+   `sudo aether-setup` at any time to change them.
+
+3. **Log in** at the console prompt with user `aether` and password `aether`.
+
+   <Aside type="caution" title="Change the password">
+   Nothing forces a change, and every machine installed from this ISO has the same credentials.
+   Run `passwd` now. The same password is also used for the OnRamp Ansible user; see
+   [How the ISO works](/docs/iso/how-the-iso-works/) before changing that one.
+   </Aside>
+
+4. **Wait for the bootstrap to finish.** Check its state with:
+
+   ```bash
+   systemctl status aether-bootstrap.service
+   ls /var/lib/aether/
+   ```
+
+   While it runs, `systemctl` reports `activating` and the directory holds `bundle.tar.zst`. When
+   it finishes, the directory holds `bootstrap.done` instead and the bundle is gone.
+
+   ```text title="Expected output when finished"
+   bootstrap.done
+   ```
+
+</Steps>
 
 ## Verify
 
-TODO
+```bash
+systemctl is-active rke2-server aether-ops
+curl http://localhost:8186/healthz
+```
+
+```text title="Expected output"
+active
+active
+{"status":"healthy","version":"v0.4.5","uptime":"3m12s"}
+```
+
+`aether-ops` reports the version embedded in the ISO's bundle, which may be older than the current
+release; see the note on the [ISO index](/docs/iso/install/).
 
 ## Next
 
-TODO
+[Open the web UI](/docs/iso/open-the-web-ui/) from your workstation.
